@@ -9,3 +9,9 @@
 
 ## Brag Book
 Brag Book is a Portfolio Website
+
+## Prerequisites
+
+## Initializing the App
+
+## Features
