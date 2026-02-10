@@ -5,4 +5,4 @@ Brag Book Project
 - TimeSheet:
   https://docs.google.com/spreadsheets/d/1w4ipw3OLucJkLUSc5HmOBDwUB32WeGyAK4sz2_q60ZU/edit?gid=0#gid=0
 - Client Meeting Notes:
-- Demmo Day PPT:
+- Demo Day PPT:
