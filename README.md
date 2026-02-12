@@ -6,6 +6,7 @@
   https://docs.google.com/spreadsheets/d/1w4ipw3OLucJkLUSc5HmOBDwUB32WeGyAK4sz2_q60ZU/edit?gid=0#gid=0
 - Client Meeting Notes: We are unable to Contact our Sponsor yet
 - Demo Day PPT:
+  https://1drv.ms/p/c/6683f44a98a14934/IQD8asQsjFLdR5gzTObhAqgJAU6q0quLEAf6pylW_awUBTs?e=zkBx8U
 
 ## Brag Book
 The Brag Book platform functions as a web-based portfolio system which assists professionals in collecting and arranging their work achievements for presentation purposes through reliable and organized methods. Users have the ability to create "brag entries" which allow them to record their achievements and completed projects and important career milestones throughout their professional journey.
