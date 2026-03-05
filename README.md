@@ -27,3 +27,5 @@ Brag Book provides users with an easy-to-use interface which maintains a profess
 
 Demo Day #1 PPT: <a href = "https://1drv.ms/p/c/6683f44a98a14934/IQD8asQsjFLdR5gzTObhAqgJAU6q0quLEAf6pylW_awUBTs?e=zkBx8U" target = "_blank"> <em><u>Demo Day 1 PPT</u></em> </a>
 
+Demo Day #2 PPT: <a href = "https://1drv.ms/p/c/6683f44a98a14934/IQAeJ77cMPbzR62OFTScaMGsATWfwpHANBHCjc6ct0bOmaA?e=zPfhjQ"  target = "_blank">  <em><u>Demo Day 2 PPT</u></em> </a>
+
