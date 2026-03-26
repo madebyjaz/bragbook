@@ -1,6 +1,6 @@
 // HomePageCanvas.jsx
 // The root container that the entire Bragbook app lives inside.
-// This is the full-screen canvas that holds all content zones —
+// This is the full-screen canvas that holds all content zones such as 
 // hero, auth panels, and brag grid — as zoomable regions.
 // Every other component on the homepage gets placed inside this canvas.
 
