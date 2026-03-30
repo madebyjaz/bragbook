@@ -1,12 +1,14 @@
-import { color } from "motion";
-import { h2, title } from "motion/react-client";                 // motion could be used for the notif popup after submitting (IDK but not implementing for MVP)
 import { useState } from "react";
-// import { useNavigate } from "react-router-dom";             // Later we'll use this to redirect to Usr_Portfolio after submission is completed
+import { motion } from "motion/react";
+// import { useNavigate } from "react-router-dom";
+
+
+// import { db, auth } from "../../firebase/firebase";
+// import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 
 export default function create_achievement_entry_form() {
-    // State variables to hold the form data (for now one state object for all fields just to make sure it works lol)
+
     const [createFormData, setCreateData] = useState({
-        // Fields for the achievement entry form
         title: "",
         company: "",
         description: "",
@@ -17,177 +19,218 @@ export default function create_achievement_entry_form() {
 
     // handler for all inputs (for now, just one handler for all fields to make sure it works)
     const handleInputChange = (e) => {
-        const { name, value, type, checked } = e.target;                   // Destructuring the name, val, type, and checked from the event target
-        // Handling the nested fields (like dropdowns)
+        const { name, value, type, checked } = e.target;
         if (name.includes(".")) {
             const [parent, child] = name.split(".");
             setCreateData((prevData) => ({
-                ...prevData, 
+                ...prevData,
                 [parent]: {
                     ...prevData[parent],
-                    [child]: type === "checkbox" ? checked : value,     // For handling the checkbox input (present toggle)
-                }
+                    [child]: type === "checkbox" ? checked : value,
+                },
             }));
         } else {
             setCreateData((prevData) => ({
-                ...prevData,                                    // Spreading the previous state to maintain unchanged fields
-                [name]: value,                                  // Updating the specific fields that changed
+                ...prevData,
+                [name]: type === "checkbox" ? checked : value,
             }));
         }
-    }
-
-    const [isToggled, setisToggled] = useState(false);        // State for tracking the toggle status
-    const [showNotification, setShowNotification] = useState(false); // State for triggering a  notif. popup after submission 
-
-    // handler for the toggle
-    const ToggleHandler = () => {
-        setisToggled(!isToggled);       // Toggling the state between true and false when the usr clicks the button
     };
 
-    // Function to handle form submission
-    const handleSubmit = (e) => {
-        e.preventDefault();                                 // Preventing the default submission behavior (page refresh)
-        // THIS IS WHERE THE FORM DATA FOR FIREBASE WOULD EXISTS
+    const ToggleHandler = () => setisToggled(!isToggled);
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+
+        // Firebase write 
 
 
-        setShowNotification(true);                         // Triggering the notification popup 
-        setTimeout(() => {                                // Setting a timeout to hide the notification after 3 seconds
-            setShowNotification(false);
-        }, 3000);
 
         console.log("Form data:", createFormData);
+        setShowNotification(true);
+        setTimeout(() => setShowNotification(false), 3000);
 
-        // Resetting the form after submission (Just until we add redirect to Usr_Portfolio and firebase functionality)
         setCreateData({
             title: "",
-            company: "", 
+            company: "",
             description: "",
             dateStarted: { month: "", year: "" },
             dateCompleted: { month: "", year: "" },
             isPresent: false,
         });
-        setisToggled(false);                    // fix: gotta reset the present toggle too
-    }
+        setisToggled(false);
+        // navigate("/portfolio");
+    };
+
+    const handleBack = () => {
+        console.log("back to portfolio");
+        // navigate("/portfolio");
+    };
 
     const months = [
-        "January", "February", "March", "April", "May", "June",
-        "July", "August", "September", "October", "November", "December"
+        "January","February","March","April","May","June",
+        "July","August","September","October","November","December",
     ];
 
-    const years = [];                                           // array to hold the years for the dropdown
+    const years = [];
     const currentYear = new Date().getFullYear();
-    for (let year = currentYear; year >= 1930; year--) {        //  Populating years from the current year back to 1930
-        years.push(year);
-    }
+    for (let year = currentYear; year >= 1930; year--) years.push(year);
 
-    // Now the UI for the form
+    const inputClass = "w-full px-4 py-3 border border-gray-200 rounded-xl text-sm text-gray-900 bg-white outline-none focus:border-[#007C77] focus:ring-2 focus:ring-[#007C77]/20 transition-all";
+    const selectClass = "w-full px-4 py-3 border border-gray-200 rounded-xl text-sm text-gray-600 bg-white outline-none cursor-pointer focus:border-[#007C77] focus:ring-2 focus:ring-[#007C77]/20 transition-all";
+    const labelClass = "text-sm font-semibold text-[#003C61]";
+
     return (
-        // s = styles cost for styling the form
+        <div className="min-h-screen bg-[#1a1a2e] flex items-start justify-center py-10 px-4">
 
-        <div style={s.pageWrapper}>
-            <div style = {s.container}>
-                <h2 style={s.h2}> Create a New Achievement Entry</h2>
-                <form onSubmit={handleSubmit} style = {s.form}>
-                    {/* Form fields will go here */}
+            <motion.div
+                initial={{ opacity: 0, y: 24 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, ease: "easeOut" }}
+                className="bg-[#F5F5F5] rounded-2xl shadow-2xl w-full max-w-xl p-8 max-h-[90vh] overflow-y-auto"
+            >
+                {/* Header */}
+                <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-2xl font-bold text-[#003C61]">Create a New Achievement Entry</h2>
+                    <button type="button" onClick={handleBack}
+                        className="text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg px-2 py-1 text-lg transition-colors">
+                        ✕
+                    </button>
+                </div>
 
-                    {/* Field 1: Name / Title Field (REQUIRED) */}
-                    <label style = {s.label}> Name / Title of Entry <span style={s.requiredsymbol}>*</span> </label>
-                    <input type="text" name="title" value={createFormData.title} onChange={handleInputChange} placeholder="e.g. Software Development Intern" required style={s.input} />
+                <form onSubmit={handleSubmit} className="flex flex-col gap-5">
 
-                    {/* Field 2: Company/Organization Field (REQUIRED) */}
-                    <label style={s.label}> Company/Organization <span style={s.requiredsymbol}>*</span> </label>
-                    <input type="text" name="company" value={createFormData.company} onChange={handleInputChange} placeholder="e.g. Tech Inc." required style={s.input} />
-
-                    {/* Field 3: Description Field */}
-                    <label style={s.label}> Description </label>
-                    <textarea name="description" value={createFormData.description} onChange={handleInputChange} placeholder="Describe your accomplishment, your role / responsibilities, and impact..." style={s.textarea} />
-
-                    {/* Field 4: Date Started Field w/dropdowns (BOTH DROPDOWNS REQUIRED)*/}
-                    <label style={s.label}> Date Started <span style={s.requiredsymbol}>*</span> </label>
-                    <div style={s.dateContainer}>
-
-                    { /* dropdown 4 month select (date started) */ }
-                        <select name="dateStarted.month" value={createFormData.dateStarted.month} onChange={handleInputChange} style={s.select}>
-                            <option value=""> Select Month </option>
-                            {months.map((m) => (
-                                <option key={m} value={m} > {m}</option>
-                            ))}
-                        </select>
-
-                        { /* dropdown 4 year select (date started) */ }
-                        <select name="dateStarted.year" value={createFormData.dateStarted.year} onChange={handleInputChange} style={s.select}>
-                            <option value=""> Select Year</option>
-                            {years.map((y) => (
-                                <option key={y} value={y} > {y} </option>
-                            ))}
-                        </select>
-
+                    {/* Field 1: Title REQUIRED */}
+                    <div className="flex flex-col gap-1">
+                        <label className={labelClass}>
+                            Name / Title of Entry <span className="text-[#e63946]">*</span>
+                        </label>
+                        <input type="text" name="title" value={createFormData.title}
+                            onChange={handleInputChange} placeholder="e.g. Software Development Intern"
+                            required className={inputClass} />
                     </div>
 
-                    {/* Field 5: Date Completed Field w/dropdowns and 'Present' toggle (IDT DROPDOWNS NEED TO BE REQUIRED HERE)
-                    May change Later?? IDK */}
-                    <label style={s.label}> Date Completed </label>
-                    <div style={s.dateContainer}>
+                    {/* Field 2: Company REQUIRED */}
+                    <div className="flex flex-col gap-1">
+                        <label className={labelClass}>
+                            Company/Organization <span className="text-[#e63946]">*</span>
+                        </label>
+                        <input type="text" name="company" value={createFormData.company}
+                            onChange={handleInputChange} placeholder="e.g. Tech Inc."
+                            required className={inputClass} />
+                    </div>
 
-                    { /* dropdown 4 month select (date completed) */ }
-                        <select name="dateCompleted.month" value={createFormData.dateCompleted.month} onChange={handleInputChange} style={s.select}>
-                            <option value=""> Select Month </option>
-                            {months.map((m) => (
-                                <option key={m} value={m} > {m}</option>
-                            ))}
-                        </select>
+                    {/* Field 3: Description */}
+                    <div className="flex flex-col gap-1">
+                        <label className={labelClass}>Description</label>
+                        <textarea name="description" value={createFormData.description}
+                            onChange={handleInputChange} rows={5}
+                            placeholder="Describe your accomplishment, your role / responsibilities, and impact..."
+                            className={`${inputClass} resize-y min-h-[110px] font-sans`} />
+                    </div>
 
-                        { /* dropdown 4 year select (date Completed) */ }
-                        <select name="dateCompleted.year" value={createFormData.dateCompleted.year} onChange={handleInputChange} style={s.select}>
-                            <option value=""> Select Year</option>
-                            {years.map((y) => (
-                                <option key={y} value={y} > {y} </option>
-                            ))}
-                        </select>
-
-                        { /* Present toggle 
-                        <label style={s.presentlabel}> Present 
-                            <input type="Checkbox" name="isPresent" checked={createFormData.isPresent} onChange={handleInputChange} style={s.checked} />
-                        </label>  */ }
-
-                        <div style={s.presentToggleContainer}>
-                            <label style={s.presentlabel}> Present </label>
-                            <button type="button" onClick={ToggleHandler} style={s.toggled}>          {/* Check if the achievement is marked as present/currently active*/}
-                                <span> {isToggled ? "True" : "False"} </span>  
-                            </button>
+                    {/* Field 4: Date Started REQUIRED */}
+                    <div className="flex flex-col gap-1">
+                        <label className={labelClass}>
+                            Date Started <span className="text-[#e63946]">*</span>
+                        </label>
+                        <div className="grid grid-cols-2 gap-3">
+                            <select name="dateStarted.month" value={createFormData.dateStarted.month}
+                                onChange={handleInputChange} className={selectClass}>
+                                <option value="">Select Month</option>
+                                {months.map((m) => <option key={m} value={m}>{m}</option>)}
+                            </select>
+                            <select name="dateStarted.year" value={createFormData.dateStarted.year}
+                                onChange={handleInputChange} className={selectClass}>
+                                <option value="">Select Year</option>
+                                {years.map((y) => <option key={y} value={y}>{y}</option>)}
+                            </select>
                         </div>
-                        
-
                     </div>
 
-                    <button type="submit" style={s.submitButton}> Create Entry </button>
+                    {/* Field 5: Date Completed */}
+                    <div className="flex flex-col gap-1">
+                        <label className={labelClass}>Date Completed</label>
+
+                        {/* Present toggle */}
+                        <div className="flex items-center gap-3 mb-2 mt-1">
+                            <span className="text-sm text-gray-600 font-medium">Present</span>
+                            <button type="button" onClick={ToggleHandler}
+                                className={`relative w-12 h-6 rounded-full transition-colors duration-300 ${isToggled ? "bg-[#007C77]" : "bg-gray-300"}`}>
+                                <motion.span
+                                    animate={{ x: isToggled ? 24 : 2 }}
+                                    transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                                    className="absolute top-0.5 w-5 h-5 bg-white rounded-full shadow block"
+                                    style={{ left: 0 }}
+                                />
+                            </button>
+                            <AnimatePresence>
+                                {isToggled && (
+                                    <motion.span
+                                        initial={{ opacity: 0, x: -8 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        exit={{ opacity: 0, x: -8 }}
+                                        className="text-xs text-[#007C77] font-medium"
+                                    >
+                                        Currently active
+                                    </motion.span>
+                                )}
+                            </AnimatePresence>
+                        </div>
+
+                        {/* Date completed dropdowns — hidden when Present is on */}
+                        <AnimatePresence>
+                            {!isToggled && (
+                                <motion.div
+                                    initial={{ opacity: 0, height: 0 }}
+                                    animate={{ opacity: 1, height: "auto" }}
+                                    exit={{ opacity: 0, height: 0 }}
+                                    transition={{ duration: 0.2 }}
+                                    className="grid grid-cols-2 gap-3 overflow-hidden"
+                                >
+                                    <select name="dateCompleted.month" value={createFormData.dateCompleted.month}
+                                        onChange={handleInputChange} className={selectClass}>
+                                        <option value="">Select Month</option>
+                                        {months.map((m) => <option key={m} value={m}>{m}</option>)}
+                                    </select>
+                                    <select name="dateCompleted.year" value={createFormData.dateCompleted.year}
+                                        onChange={handleInputChange} className={selectClass}>
+                                        <option value="">Select Year</option>
+                                        {years.map((y) => <option key={y} value={y}>{y}</option>)}
+                                    </select>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </div>
+
+                    {/* Submit */}
+                    <div className="flex justify-end mt-2">
+                        <motion.button
+                            type="submit"
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.97 }}
+                            className="bg-[#007C77] hover:bg-[#005f5b] text-white font-semibold px-10 py-3 rounded-xl text-sm transition-colors"
+                        >
+                            Create Entry
+                        </motion.button>
+                    </div>
+
                 </form>
-            </div>
-                {/* Notification Popup (can be improved with motion for animation effects later) */}
-                {showNotification && (
-                    <div style={s.notif}>
-                        ✔ Achievement Entry Successfully Created!
-                    </div>
-                )}
-        </div>      
-    );
-}
+            </motion.div>
 
-// Basic styling for the form (can be improved l8tr (is this the abbreviation 4 later lol))
-const s = {
-    pageWrapper: {display: "flex", justifyContent: "center", alignItems: "flex-start", minHeight: "100vh", backgroundColor: "#1a1a2e", padding: "40px 16px"},
-    h2: {position: "relative", left: "10px", color: "#003C61", fontSize: "24px", fontWeight: "700", marginBottom: "20px"},  // Dark blue color for the Heading (just to see how this looks with the rest of the site)
-    container: {backgroundColor: "#F5F5F5", borderRadius: "16px", padding: "32px 36px 28px", maxWidth: "580px", width: "100%", boxShadow:"0 8px 40px rgba(0, 0, 0, 0, 0.18)", fontFamily: " 'Segoe UI', sans-serif", maxHeight: "90vh", overflowY: "auto"}, // Light background for the container, centered w/ some padding and rounded corners
-    label:{fontSize: "14px", fontWeight: "600", color: "#003C61", display: "block", marginBottom: "6px", marginTop: "16px" },
-    requiredsymbol: {color: "#e63946"}, // Red color for the asterisk to indicate required fields
-    input: {width: "100%", padding: "12px 14px", border: "1.5px solid #e5e7eb", borderRadius: "10px", fontSize: "14px", color: "#111827", backgroundColor: "#ffffff", outline: "none", boxSizing: "border-box", fontFamily: "inherit"}, 
-    select: {width: "100%", padding: "12px 14px", border: "1.5px solid #e5e7eb", borderRadius: "10px", fontSize: "14px", color: "#374151", backgroundColor: "#ffffff", outline: "none", cursor: "pointer", boxSizing: "border-box", fontFamily: "inherit"}, 
-    textarea: {width: "100%", padding: "12px 14px", border: "1.5px solid #e5e7eb", borderRadius: "10px", fontSize: "14px", color: "#111827", backgroundColor: "#ffffff", outline: "none", resize: "vertical", minHeight: "110px", boxSizing: "border-box", fontFamily: "inherit"},
-    dateContainer: {display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginTop: "8px", alignItems: "center"}, // Container for the date dropdowns and present toggle, using CSS grid to layout the fields
-    presentToggleContainer: {display: "flex", alignItems: "center", gap: "8px"},            // Container for the present toggle
-    presentlabel: {fontSize: "14px", display: "flex", alignItems: "center", gap: "5px"},
-    toggled: {width: "50px", height: "30px", backgroundColor: "#007C77", borderRadius: "15px", position: "relative", border: "none", cursor: "pointer", transition: "background-color 0.3s ease"},
-    form: {display: "flex", flexDirection: "column"},
-    submitButton: {marginTop: "24px", backgroundColor: "#007C77", color: "#ffffff", border: "none", borderRadius: "10px", padding: "13px 36px", fontSize: "15px", fontWeight: "600", cursor: "pointer", display: "block", marginLeft: "auto"},
-    notif: { position: "fixed", bottom: "32px", right: "32px", backgroundColor: "#007C77", color: "#ffffff", padding: "14px 24px", borderRadius: "10px", fontSize: "15px", fontWeight: "600", boxShadow: "0 4px 20px rgba(0,0,0,0.2)", zIndex: "1000" },
+            {/* Toast notification */}
+            <AnimatePresence>
+                {showNotification && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 20 }}
+                        className="fixed bottom-8 right-8 bg-[#007C77] text-white px-6 py-4 rounded-xl text-sm font-semibold shadow-xl z-50"
+                    >
+                        ✔ Achievement Entry Successfully Created!
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </div>
+    );
 }
