@@ -29,15 +29,14 @@ const user = {
 
 // frames for each section of the profile 
 const FRAMES = [
-    { id: "overview",     label: "Overview",   x: 840,  y: 440,  w: 740, h: 440  },
-    { id: "profile",      label: "Profile",    x: 60,   y: 50,   w: 660, h: 290 },
-    { id: "education",    label: "Education",  x: 60,   y: 440,  w: 640, h: 340 },
-    { id: "achievements", label: "Achievements", x: 840,  y: 30,   w: 740, h: 350},
-    { id: "contact",      label: "Connect",      x: 60,   y: 880,  w: 640, h: 230 },
+    { id: "overview",   x: 680,  y: 380,  w: 640, h: "420" },
+    { id: "profile",      label: "Profile",    x: 60,   y: 60,   w: 580, h: "800" },
+    { id: "education",    label: "Education",  x: 60,   y: 680,  w: 580, h: "380" },
+    { id: "achievements", label: "Achievements", x: 1360,  y: 60,   w: 580, h: "500"},
 ];
 
-const CANVAS_W = 1660;
-const CANVAS_H = 1180;
+const CANVAS_W = 2060;
+const CANVAS_H = 1160;
 
 export default function Usr_Portfolio() {
     // state to track which frame the usr is currently on (null = overview)
@@ -89,9 +88,19 @@ export default function Usr_Portfolio() {
 
     // making a zoom/pan for the canvas
     const getCanvasTransform = () => {
-        if (!canvasFrame) return "scale(1) translate(0px, 0px)";
         const vw = window.innerWidth  || 1280;
         const vh = (window.innerHeight || 800) - 52;
+
+        if (!canvasFrame) {
+            // zoom out to fit the entire canvas in the viewport
+            const scaleX = (vw * 0.95) / CANVAS_W;
+            const scaleY = (vh * 0.95) / CANVAS_H;
+            const scale  = Math.min(scaleX, scaleY);
+            const tx = (vw / scale - CANVAS_W) / 2;
+            const ty = (vh / scale - CANVAS_H) / 2;
+            return `scale(${scale}) translate(${tx}px, ${ty}px)`;
+        }
+
         const scaleX = (vw * 0.88) / canvasFrame.w;
         const scaleY = (vh * 0.88) / canvasFrame.h;
         const scale  = Math.min(scaleX, scaleY, 1.9);
@@ -126,54 +135,54 @@ export default function Usr_Portfolio() {
                         </div>
                     ))}
 
-                    {/* overview frame */}
-                    <FrameCard frame={FRAMES[0]} active={canvasFrame?.id === "overview"} onClick={goOverview} >
-                        <div style={{position: "relative", width: "100%", height: "100%", overflow: "hidden", borderRadius: 12, background: "#f0f4f8" }}>
-                            <div style={{ position: "absolute", top: 0, left: 0, width: CANVAS_W, height: CANVAS_H, transformOrigin: "top left", transform: `scale(${Math.min((FRAMES[0].w - 56) / CANVAS_W, (FRAMES[0].h - 56) / CANVAS_H)})`, pointerEvents: "none"}}>
-                                {FRAMES.slice(1).map(f => (
-                                    <div key={f.id} style={{position: "absolute", left: f.x, top: f.y, width: f.w, height: f.h, borderRadius: 20, backgroundColor: "#ffffff", boxShadow: "0 4px 24px rgba(0,0,0,0.08)", display: "flex", alignItems: "center", justifyContent: "center"}}>
-                                        <span style={{ fontSize: 13, fontWeight: 700, color: "#003C61", opacity: 0.5, textTransform: "uppercase", letterSpacing: "0.08em" }}> {f.label} </span>
+                    {/* Profile card frames */}    
+                    <FrameCard frame={FRAMES[1]} active={canvasFrame?.id === "profile"} onClick={ () => goTo(FRAMES[1])}>
+                        <div className="absolute top-0 left-0 right-0 h-16 rounded-t-2xl" style={{ background: "linear-gradient(90deg, #007C77, #0d9488, #003C61)" }} />
+                        
+                        {/* avatar + name row */}
+                        <div className="absolute left-6 right-6" style={{top: 36}}>
+                            <div className="flex items-end gap-4">
+                                <div className="w-14 h-14 rounded-full flex items-center justify-center text-white text-xl font-extrabold border-2 border-white shadow shrink-0" style={{ background: "linear-gradient(135deg, #007C77, #0d9488)" }}>
+                                    {user.initials}
+                                </div>
+                                <div className="flex-1 pb-1">
+                                    <p className="text-base font-extrabold text-[#003C61]">{user.name}</p>
+                                    <p className="text-[10px] text-gray-400 leading-snug">{user.tagline}</p>
+                                    <p className="text-[10px] text-gray-300 mt-1">📍 {user.location} · ✉️ {user.email}</p>
+                                </div>
+                                <button className="self-start bg-gray-100 hover:bg-gray-200 text-[#003C61] text-[10px] font-semibold px-3 py-1.5 rounded-lg transition-colors border-none cursor-pointer">
+                                    Edit Profile
+                                </button>
+                            </div>
+                        </div>     
+
+                        {/* bio */}
+                            <p className="text-[11px] text-gray-400 mb-4">{user.bio}</p>
+
+                            {/* socials grid */}
+                            <p className="text-xs font-extrabold text-[#003C61] mb-2">Connect</p>
+                            <div className="grid grid-cols-2 gap-2">
+                                {user.socials.map((soc, i) => (
+                                    <div key={i} className="border border-gray-200 rounded-xl p-2.5 flex gap-2.5 items-center hover:border-[#007C77] transition-colors cursor-pointer">
+                                        <div className="w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-extrabold text-[#007C77] shrink-0" style={{ background: "rgba(0,124,119,0.08)" }}>
+                                            {soc.icon}
+                                        </div>
+                                        <div>
+                                            <p className="text-[11px] font-bold text-[#003C61]">{soc.platform}</p>
+                                            <p className="text-[9px] text-gray-300">{soc.url}</p>
+                                        </div>
                                     </div>
                                 ))}
                             </div>
-                            <div className="absolute bottom-2 left-0 right-0 text-center text-[10px] font-bold text-[#007C77] uppercase tracking-widest">
-                                Overview 
-                            </div>
-                        </div>
-                    </FrameCard>
 
-                    {/* Profile card frames */}    
-
-                    <FrameCard frame={FRAMES[1]} active={canvasFrame?.id === "profile"} onClick={ () => goTo(FRAMES[1])}>
-                        <div className="absolute top-0 left-0 right-0 h-16 rounded-t-2xl" style={{ background: "linear-gradient(90deg, #007C77, #0d9488, #003C61)" }} />
-                        <div className="absolute top-8 left-6 right-6 flex items-end gap-4">
-
-                            <div className="w-14 h-14 rounded-full flex items-center justify-center text-white text-xl font-extrabold border-2 border-white shadow shrink-0" style={{ background: "linear-gradient(135deg, #007C77, #0d9488)" }}>
-                                {user.initials}
-                            </div>
-
-                            <div className="flex-1 pb-1">
-                                <p className="text-base font-extrabold text-[#003C61]">{user.name}</p>
-                                <p className="text-[10px] text-gray-400 leading-snug">{user.tagline}</p>
-                                <p className=" ">{user.bio}</p>
-                                <p className="text-[10px] text-gray-300 mt-1">📍 {user.location} | ✉️ {user.email}</p>
-
-                                {/* social media links */}
-                                {user.socials.map(s => (
-                                        <span key={s.platform} href={s.url} className=" text-[9px] font-bold text-[#007C77] bg-[#007C77]/10 px-2 py-0.5 rounded" > {s.icon} </span>
-                                    ))}
-                            </div>
-
-                            {/* link to Edit Profile form */}
-                            <button className="self-start bg-gray-100 hover:bg-gray-200 text-[#003C61] text-[10px] font-semibold px-3 py-1.5 rounded-lg transition-colors border-none cursor-pointer">
-                                ✏ Edit Profile
-                            </button>
-                        </div>
                     </FrameCard>
 
                     {/* education frame */}
                     <FrameCard frame={FRAMES[2]} active={canvasFrame?.id === "education"} onClick={() => goTo(FRAMES[2])}>
-                        <p className="text-sm font-extrabold text-[#003C61] mb-3 "> Education</p>
+                        <div className="flex justify-between items-center mb-3 "> 
+                            <p className="text-sm font-extrabold text-[#003C61] "> Education</p>
+                            <button className="bg-[#007C77] hover:bg-[#005f5b] text-white text-[10px] font-bold px-3 py-1.5 rounded-lg transition-colors border-none cursor-pointer "> + New Education </button> {/* route the usr to create_education form */}
+                        </div>
                         {/* education cards for each entry */}
                         {educationEntries.length === 0 ? (
                             <p className="text-xs text-gray-300 mt-4 text-center">No education entries yet. Click "Add Education" to get started!</p>
@@ -191,12 +200,26 @@ export default function Usr_Portfolio() {
                         )}
                     </FrameCard>
 
-                    {/* achievement(brag) entry cards frame */}
+                    {/* achievement(brags) entries cards frame */}
                     <FrameCard frame={FRAMES[3]} active={canvasFrame?.id === "achievements"} onClick={() => goTo(FRAMES[3])}>
-                        
-
+                        <div className="flex justify-between items-center mb-3 "> 
+                            <p className="text-sm font-extrabold text-[#003C61] "> Achievements</p>
+                            <button className="bg-[#007C77] hover:bg-[#005f5b] text-white text-[10px] font-bold px-3 py-1.5 rounded-lg transition-colors border-none cursor-pointer "> + Add New Entry</button> {/* route the usr to achievement_create form */}
+                        </div>
+                        {/* achievement cards for each entry */}
+                        <div>
+                            {user.achievements.map((b_entry, i) => (
+                                <div key={i} className="border border-gray-200 rounded-xl p-3 flex flex-col gap-1 hover:border-[#007C77] transition-colors cursor-pointer">
+                                    <div>
+                                        <p className="text-[11px] font-bold text-[#003C61]">{b_entry.title}</p>
+                                        <p className="text-[10px] text-gray-400">{b_entry.company}</p>
+                                        <p className="text-[10px] text-gray-400">{b_entry.dates}</p>
+                                        <span className="text-[10px] text-[#007C77] font-semibold mt-1">View details →</span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
                     </FrameCard>
-                    
 
                 </div>
             </div>
