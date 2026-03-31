@@ -4,7 +4,7 @@ import { useState } from "react";
 const user = {
     name: "John Doe",
     initials: "JD",
-    title: "Full-Stack Developer | UI/UX Enthusiast | Open Source Contributor",
+    tagline: "Full-Stack Developer | UI/UX Enthusiast | Open Source Contributor",
     location: "San Francisco, CA",
 
 
@@ -69,31 +69,113 @@ export default function Usr_Portfolio() {
         return `scale(${scale}) translate(${tx}px, ${ty}px)`;
     };
 
+
+    return (
+        <div className="fixed inset-0 flex flex-col overflow-hidden " style={{}}>
+            {/* Nav Bar */}
+            <nav className="bg-white border-b border-gray-200 flex items-center justify-between px-6 z-50 shrink-0 shadow-sm " style={{ }}>
+                <span className="text-xl font-bold " style={{ background: "linear-gradient(90deg, #003C61, #007C77, #0d9488)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text"  }}>
+                    BragBook.cv 
+                </span>
+                <div className=" ">
+                    <button className="ext-xl text-[#003C61] bg-transparent border-none cursor-pointer "> ☰ </button>
+                </div>
+            </nav>
+
+            {/* main content area */}
+            <div className=" ">
+                <div style={{width: CANVAS_W, height: CANVAS_H, position: "absolute", top: 0, left: 0, transformOrigin: "top left", transform: getCanvasTransform(), transition: "transform 0.65s cubic-bezier(0.77, 0, 0.18, 1)",}}>
+
+                    {/* frame labels for the overview */}
+                    {!canvasFrame && FRAMES.map(f => (
+                        <div key={f.id + "-1b1"} className=" " style={{}}>
+                            {f.label}
+                        </div>
+                    ))}
+
+                    {/* overview frame */}
+                    <FrameCard frame={FRAMES[0]} active={canvasFrame?.id === "overview"} onClick={() => goTo(FRAMES[0])}>
+                        <div className=" " style={{}}>
+                            <div className="">
+
+                                <button className=" ">View My Work</button>
+                            </div>
+                        </div>
+                    </FrameCard>
+                    {/* Profile card frames */}    
+
+                    <FrameCard frame={FRAMES[1]} active={canvasFrame?.id === "profile"} onClick={() => goTo(FRAMES[1])}>
+                        <div className="absolute top-0 left-0 right-0 h-16 rounded-t-2xl" style={{ background: "linear-gradient(90deg, #007C77, #0d9488, #003C61)" }} />
+                        <div className="absolute top-8 left-6 right-6 flex items-end gap-4">
+
+                            <div className="w-14 h-14 rounded-full flex items-center justify-center text-white text-xl font-extrabold border-2 border-white shadow shrink-0" style={{ background: "linear-gradient(135deg, #007C77, #0d9488)" }}>
+                                {user.initials}
+                            </div>
+
+                            <div className="flex-1 pb-1">
+                                <p className="text-base font-extrabold text-[#003C61]">{user.name}</p>
+                                <p className="text-[10px] text-gray-400 leading-snug">{user.tagline}</p>
+                                <p className=" ">{user.bio}</p>
+                                <p className="text-[10px] text-gray-300 mt-1">📍 {user.location} · ✉️ {user.email}</p>
+
+                                {/* social media links */}
+                                {user.socials.map(s => (
+                                        <a key={s.platform} href={s.url} className=" " style={{}}>
+                                            {s.icon}
+                                        </a>
+                                    ))}
+                            </div>
+
+                            {/* link to Edit Profile form */}
+                            <button className="self-start bg-gray-100 hover:bg-gray-200 text-[#003C61] text-[10px] font-semibold px-3 py-1.5 rounded-lg transition-colors border-none cursor-pointer">
+                                ✏ Edit Profile
+                            </button>
+
+                        </div>
+                    </FrameCard>
+
+                    {/* education frame */}
+
+                    {/* achievement(brag) entry cards frame */}
+
+                </div>
+            </div>
+
+        </div>
+
+    );
 }
 
 // Reusable Frame Card component for each section 
 function FrameCard({ frame, active, onClick, children }) {
     return (
-        <div
-            onClick={onClick}
-            style={{
-                position: "absolute",
-                left: frame.x, top: frame.y,
-                width: frame.w, height: frame.h,
-                padding: 28, boxSizing: "border-box",
-                borderRadius: 20,
-                backgroundColor: "#ffffff",
-                boxShadow: active
-                    ? "0 0 0 3px #59168B 0 24px 60px rgba(0,0,0,0.18)"
-                    : "0 4px 24px rgba(0,0,0,0.08)",
-                overflow: "hidden",
-                cursor: active ? "default" : "pointer",
-                transition: "box-shadow 0.2s ease",
-            }}
-            onMouseEnter={e => { if (!active) e.currentTarget.style.boxShadow = "0 0 0 2.5px #0d9488, 0 12px 40px rgba(0,0,0,0.13)"; }}
-            onMouseLeave={e => { if (!active) e.currentTarget.style.boxShadow = "0 4px 24px rgba(0,0,0,0.08)"; }}
-        >
-            {children}
+        <div style={{position: "relative", width: "100%", height:"100%", overflow:"hidden", borderRadius:12, background: "#f0f4f8"}}>
+            {/* Scaling to make sure the entire canvas is visible */}
+                <div style={{
+                    position: "absolute",
+                    top: 0, left: 0,
+                    width: CANVAS_W,
+                    height: CANVAS_H,
+                    transformOrigin: "top left",
+                    transform: `scale(${Math.min((FRAMES[0].w - 56) / CANVAS_W, (FRAMES[0].h - 56) / CANVAS_H)})`,
+                    pointerEvents: "none", }}>
+
+                        {FRAMES.slice(1).map(f => (
+                            <div key={f.id} style={{
+                                position: "absolute",
+                                left: f.x, top: f.y,
+                                width: f.w, height: f.h,
+                                borderRadius: 20,
+                                backgroundColor: "#ffffff",
+                                boxShadow: "0 4px 24px rgba(0,0,0,0.08)",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center", }}>
+
+                                    <span style={{fontSize: 13, fontWeight: 700, color: "", opacity: 0.5, textTransform: "uppercase", }}>{f.label} </span>
+                            </div>
+                        ))}
+                </div>
         </div>
     );
 }
