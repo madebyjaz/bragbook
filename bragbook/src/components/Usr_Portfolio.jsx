@@ -1,4 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { db, auth } from "../firebaseConfig";
+import {collection, onSnapshot, orderBy, query} from "firebase/firestore";
+
 
 // sample data for now 
 const user = {
@@ -6,12 +9,9 @@ const user = {
     initials: "JD",
     tagline: "Full-Stack Developer | UI/UX Enthusiast | Open Source Contributor",
     location: "San Francisco, CA",
+    email: "john.doe@example.com",
+    bio: "Passionate software engineer with 5+ years of experience.", 
 
-
-    education: [
-        { degree: "B.S. Computer Science", school: "Stanford University", dates: "Sep 2015 - Jun 2019", desc: "Focused on software engineering and AI. Graduated with honors." },
-        { degree: "M.S. Software Engineering", school: "MIT", dates: "Sep 2019 - Jun 2021", desc: "Specialized in distributed systems and cloud computing." },
-    ],
     achievements: [
         { title: "E-Commerce Platform Development", company: "Tech Solutions Inc.", dates: "Jan 2022 - Dec 2023" },
         { title: "AI-Powered Analytics Dashboard",  company: "Data Insights Corp",  dates: "Mar 2021 - Aug 2021" },
@@ -25,6 +25,19 @@ const user = {
         { platform: "Portfolio", url: "johndoe.com",             icon: "PF" },
     ],
 };
+
+// state that will hold usr's education stored in firebase
+const [educationEntries, setEducationEntries] = useState([]);
+
+useEffect(() => {
+    const q = query(collection(db, "users", auth.currentUser.uid, "education"), orderBy("createdAt", "desc"));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+        const entries = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setEducationEntries(entries);
+    });
+    return () => unsubscribe();
+}, []);
+
 
 // frames for each section of the profile 
 const FRAMES = [
@@ -44,6 +57,24 @@ export default function Usr_Portfolio() {
 
     // Firebase fetch could go here 
 
+    const [educationEntries, setEducationEntries] = useState([
+        { degree: "B.S. Computer Science", school: "Stanford University", location: "Stanford, CA", dates: "Sep 2015 - Jun 2019", desc: "Focused on software engineering and AI." },
+        { degree: "M.S. Software Engineering", school: "MIT", location: "Cambridge, MA", dates: "Sep 2019 - Jun 2021", desc: "Specialized in distributed systems." },
+    ]);
+
+    // firebase fetch for education entries 
+    useEffect(() => {
+        if (!auth.currentUser) return;
+        const q = query(
+            collection(db, "users", auth.currentUser.uid, "education"),
+            orderBy("createdAt", "desc")
+        );
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const entries = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            setEducationEntries(entries);
+        });
+        return () => unsubscribe();
+    }, []);
 
 
 
@@ -130,13 +161,31 @@ export default function Usr_Portfolio() {
                             <button className="self-start bg-gray-100 hover:bg-gray-200 text-[#003C61] text-[10px] font-semibold px-3 py-1.5 rounded-lg transition-colors border-none cursor-pointer">
                                 ✏ Edit Profile
                             </button>
-
                         </div>
                     </FrameCard>
 
                     {/* education frame */}
+                    <FrameCard frame={FRAMES[2]} active={canvasFrame?.id === "education"} onClick={() => goTo(FRAMES[2])}>
+                        <p className=" "> Education</p>
+                        {/* education cards for each entry */}
+                        {educationEntries.length === 0 ? (
+                            <p className="text-gray-400 mt-4">No education entries yet. Click "Add Education" to get started!</p>
+                        ) : (
+                            educationEntries.map((edu, i) => (
+                                <div key={i} className=" " >
+                                    <div>
+                                        <p className="text-sm font-semibold">{edu.degree}</p>
+                                        <p className="text-sm text-gray-500">{edu.school} | {edu.location} </p>
+                                        <p className="text-xs text-gray-400">{edu.dates}</p>
+                                        <p className="text-sm mt-1">{edu.desc}</p>
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                    </FrameCard>
 
                     {/* achievement(brag) entry cards frame */}
+                    
 
                 </div>
             </div>
