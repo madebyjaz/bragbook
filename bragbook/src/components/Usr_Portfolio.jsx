@@ -26,26 +26,14 @@ const user = {
     ],
 };
 
-// state that will hold usr's education stored in firebase
-const [educationEntries, setEducationEntries] = useState([]);
-
-useEffect(() => {
-    const q = query(collection(db, "users", auth.currentUser.uid, "education"), orderBy("createdAt", "desc"));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-        const entries = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        setEducationEntries(entries);
-    });
-    return () => unsubscribe();
-}, []);
-
 
 // frames for each section of the profile 
 const FRAMES = [
-    { id: "overview",     label: "Overview",     },
-    { id: "profile",      label: "Profile",     },
-    { id: "education",    label: "Education",   },
-    { id: "achievements", label: "Achievements", },
-    { id: "contact",      label: "Connect",      },
+    { id: "overview",     label: "Overview",   x: 840,  y: 440,  w: 740, h: 440  },
+    { id: "profile",      label: "Profile",    x: 60,   y: 50,   w: 660, h: 290 },
+    { id: "education",    label: "Education",  x: 60,   y: 440,  w: 640, h: 340 },
+    { id: "achievements", label: "Achievements", x: 840,  y: 30,   w: 740, h: 350},
+    { id: "contact",      label: "Connect",      x: 60,   y: 880,  w: 640, h: 230 },
 ];
 
 const CANVAS_W = 1660;
@@ -61,6 +49,20 @@ export default function Usr_Portfolio() {
         { degree: "B.S. Computer Science", school: "Stanford University", location: "Stanford, CA", dates: "Sep 2015 - Jun 2019", desc: "Focused on software engineering and AI." },
         { degree: "M.S. Software Engineering", school: "MIT", location: "Cambridge, MA", dates: "Sep 2019 - Jun 2021", desc: "Specialized in distributed systems." },
     ]);
+
+    // state that will hold usr's education stored in firebase
+    // const [educationEntries, setEducationEntries] = useState([]);
+
+    useEffect(() => {
+        if (!auth.currentUser) return;
+        const q = query(collection(db, "users", auth.currentUser.uid, "education"), orderBy("createdAt", "desc"));
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const entries = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            setEducationEntries(entries);
+        });
+        return () => unsubscribe();
+    }, []);
+
 
     // firebase fetch for education entries 
     useEffect(() => {
@@ -102,40 +104,47 @@ export default function Usr_Portfolio() {
 
 
     return (
-        <div className="fixed inset-0 flex flex-col overflow-hidden " style={{}}>
+        <div className="fixed inset-0 flex flex-col overflow-hidden " style={{background: "#f0f4f8" }}>
             {/* Nav Bar */}
-            <nav className="bg-white border-b border-gray-200 flex items-center justify-between px-6 z-50 shrink-0 shadow-sm " style={{ }}>
+            <nav className="bg-white border-b border-gray-200 flex items-center justify-between px-6 z-50 shrink-0 shadow-sm " style={{ height: 52 }}>
                 <span className="text-xl font-bold " style={{ background: "linear-gradient(90deg, #003C61, #007C77, #0d9488)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text"  }}>
                     BragBook.cv 
                 </span>
-                <div className=" ">
+                <div className="flex items-center gap-3 ">
                     <button className="ext-xl text-[#003C61] bg-transparent border-none cursor-pointer "> ☰ </button>
                 </div>
             </nav>
 
             {/* main content area */}
-            <div className=" ">
-                <div style={{width: CANVAS_W, height: CANVAS_H, position: "absolute", top: 0, left: 0, transformOrigin: "top left", transform: getCanvasTransform(), transition: "transform 0.65s cubic-bezier(0.77, 0, 0.18, 1)",}}>
+            <div className="flex-1 relative overflow-hidden "> {/* canvas view */}
+                <div style={{width: CANVAS_W, height: CANVAS_H, position: "absolute", top: 0, left: 0, transformOrigin: "top left", transform: getCanvasTransform(), transition: "transform 0.65s cubic-bezier(0.77, 0, 0.18, 1)"}}>
 
                     {/* frame labels for the overview */}
                     {!canvasFrame && FRAMES.map(f => (
-                        <div key={f.id + "-1b1"} className=" " style={{}}>
+                        <div key={f.id + "-1b1"} className=" absolute text-[10px] font-bold text-[#007C77] uppercase tracking-widest pointer-events-none" style={{left: f.x + f.w / 2, top: f.y - 20, transform: "translateX(-50%)"}}>
                             {f.label}
                         </div>
                     ))}
 
                     {/* overview frame */}
-                    <FrameCard frame={FRAMES[0]} active={canvasFrame?.id === "overview"} onClick={() => goTo(FRAMES[0])}>
-                        <div className=" " style={{}}>
-                            <div className="">
-
-                                <button className=" ">View My Work</button>
+                    <FrameCard frame={FRAMES[0]} active={canvasFrame?.id === "overview"} onClick={goOverview} >
+                        <div style={{position: "relative", width: "100%", height: "100%", overflow: "hidden", borderRadius: 12, background: "#f0f4f8" }}>
+                            <div style={{ position: "absolute", top: 0, left: 0, width: CANVAS_W, height: CANVAS_H, transformOrigin: "top left", transform: `scale(${Math.min((FRAMES[0].w - 56) / CANVAS_W, (FRAMES[0].h - 56) / CANVAS_H)})`, pointerEvents: "none"}}>
+                                {FRAMES.slice(1).map(f => (
+                                    <div key={f.id} style={{position: "absolute", left: f.x, top: f.y, width: f.w, height: f.h, borderRadius: 20, backgroundColor: "#ffffff", boxShadow: "0 4px 24px rgba(0,0,0,0.08)", display: "flex", alignItems: "center", justifyContent: "center"}}>
+                                        <span style={{ fontSize: 13, fontWeight: 700, color: "#003C61", opacity: 0.5, textTransform: "uppercase", letterSpacing: "0.08em" }}> {f.label} </span>
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="absolute bottom-2 left-0 right-0 text-center text-[10px] font-bold text-[#007C77] uppercase tracking-widest">
+                                Overview 
                             </div>
                         </div>
                     </FrameCard>
+
                     {/* Profile card frames */}    
 
-                    <FrameCard frame={FRAMES[1]} active={canvasFrame?.id === "profile"} onClick={() => goTo(FRAMES[1])}>
+                    <FrameCard frame={FRAMES[1]} active={canvasFrame?.id === "profile"} onClick={ () => goTo(FRAMES[1])}>
                         <div className="absolute top-0 left-0 right-0 h-16 rounded-t-2xl" style={{ background: "linear-gradient(90deg, #007C77, #0d9488, #003C61)" }} />
                         <div className="absolute top-8 left-6 right-6 flex items-end gap-4">
 
@@ -147,13 +156,11 @@ export default function Usr_Portfolio() {
                                 <p className="text-base font-extrabold text-[#003C61]">{user.name}</p>
                                 <p className="text-[10px] text-gray-400 leading-snug">{user.tagline}</p>
                                 <p className=" ">{user.bio}</p>
-                                <p className="text-[10px] text-gray-300 mt-1">📍 {user.location} · ✉️ {user.email}</p>
+                                <p className="text-[10px] text-gray-300 mt-1">📍 {user.location} | ✉️ {user.email}</p>
 
                                 {/* social media links */}
                                 {user.socials.map(s => (
-                                        <a key={s.platform} href={s.url} className=" " style={{}}>
-                                            {s.icon}
-                                        </a>
+                                        <span key={s.platform} href={s.url} className=" text-[9px] font-bold text-[#007C77] bg-[#007C77]/10 px-2 py-0.5 rounded" > {s.icon} </span>
                                     ))}
                             </div>
 
@@ -166,18 +173,18 @@ export default function Usr_Portfolio() {
 
                     {/* education frame */}
                     <FrameCard frame={FRAMES[2]} active={canvasFrame?.id === "education"} onClick={() => goTo(FRAMES[2])}>
-                        <p className=" "> Education</p>
+                        <p className="text-sm font-extrabold text-[#003C61] mb-3 "> Education</p>
                         {/* education cards for each entry */}
                         {educationEntries.length === 0 ? (
-                            <p className="text-gray-400 mt-4">No education entries yet. Click "Add Education" to get started!</p>
+                            <p className="text-xs text-gray-300 mt-4 text-center">No education entries yet. Click "Add Education" to get started!</p>
                         ) : (
                             educationEntries.map((edu, i) => (
-                                <div key={i} className=" " >
+                                <div key={i} className={`flex gap-3 p-3 mb-2 border border-gray-100 rounded-xl hover:border-[#007C77]/40 transition-colors`} >
                                     <div>
-                                        <p className="text-sm font-semibold">{edu.degree}</p>
-                                        <p className="text-sm text-gray-500">{edu.school} | {edu.location} </p>
-                                        <p className="text-xs text-gray-400">{edu.dates}</p>
-                                        <p className="text-sm mt-1">{edu.desc}</p>
+                                        <p className="text-sm font-semibold text-[#003C61]">{edu.degree}</p>
+                                        <p className="text-[10px] text-gray-400">{edu.school} | {edu.location} </p>
+                                        <p className="text-[10px] text-gray-400">{edu.dates}</p>
+                                        <p className="text-[10px] text-gray-300 mt-0.5">{edu.desc}</p>
                                     </div>
                                 </div>
                             ))
@@ -185,6 +192,10 @@ export default function Usr_Portfolio() {
                     </FrameCard>
 
                     {/* achievement(brag) entry cards frame */}
+                    <FrameCard frame={FRAMES[3]} active={canvasFrame?.id === "achievements"} onClick={() => goTo(FRAMES[3])}>
+                        
+
+                    </FrameCard>
                     
 
                 </div>
@@ -198,33 +209,9 @@ export default function Usr_Portfolio() {
 // Reusable Frame Card component for each section 
 function FrameCard({ frame, active, onClick, children }) {
     return (
-        <div style={{position: "relative", width: "100%", height:"100%", overflow:"hidden", borderRadius:12, background: "#f0f4f8"}}>
-            {/* Scaling to make sure the entire canvas is visible */}
-                <div style={{
-                    position: "absolute",
-                    top: 0, left: 0,
-                    width: CANVAS_W,
-                    height: CANVAS_H,
-                    transformOrigin: "top left",
-                    transform: `scale(${Math.min((FRAMES[0].w - 56) / CANVAS_W, (FRAMES[0].h - 56) / CANVAS_H)})`,
-                    pointerEvents: "none", }}>
-
-                        {FRAMES.slice(1).map(f => (
-                            <div key={f.id} style={{
-                                position: "absolute",
-                                left: f.x, top: f.y,
-                                width: f.w, height: f.h,
-                                borderRadius: 20,
-                                backgroundColor: "#ffffff",
-                                boxShadow: "0 4px 24px rgba(0,0,0,0.08)",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center", }}>
-
-                                    <span style={{fontSize: 13, fontWeight: 700, color: "", opacity: 0.5, textTransform: "uppercase", }}>{f.label} </span>
-                            </div>
-                        ))}
-                </div>
+        <div onClick={onClick} style={{ position: "absolute", left: frame.x, top: frame.y, width: frame.w, height: frame.h, padding: 28, boxSizing: "border-box", borderRadius: 20, backgroundColor: "#ffffff", boxShadow: active ? "0 0 0 3px #007C77, 0 24px 60px rgba(0,0,0,0.18)" : "0 4px 24px rgba(0,0,0,0.08)", overflow: "hidden", cursor: active ? "default" : "pointer", transition: "box-shadow 0.2s ease"}} 
+        onMouseEnter={e => { if (!active) e.currentTarget.style.boxShadow = "0 0 0 2.5px #007C77, 0 12px 40px rgba(0,0,0,0.13)"; }} onMouseLeave={e => { if (!active) e.currentTarget.style.boxShadow = "0 4px 24px rgba(0,0,0,0.08)"; }}>
+            {children}
         </div>
     );
 }
