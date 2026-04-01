@@ -8,9 +8,18 @@ export default function UpdateAchievement() {
     const { entryId } = useParams();
     const navigate = useNavigate();
 
+    // form state for update populated w/ current data
+    const [updateFormData, setUpdateFormData] = useState({
+        title: "",
+        company: "",
+        description: "",
+        dateStarted: { month: "", year: "" },
+        dateCompleted: { month: "", year: "" },
+        isPresent: false,
+    });
     // form and notif states
-    const [updateFormData, setUpdateFormData] = useState(mockEntry);
-    const [isToggled, setisToggled] = useState(mockEntry.isPresent);
+    const [loading, setLoading] = useState(true);
+    const [isToggled, setisToggled] = useState(false);
     const [showNotif, setshowNotif] = useState(false);
 
     // Used ai to help make the firebase fetching logic
@@ -22,11 +31,13 @@ export default function UpdateAchievement() {
                 const data = docSnap.data();
                 setUpdateFormData(data);
                 setisToggled(data.isPresent);
+                setLoading(false);
             }
         };
         fetchEntry();
     }, [entryId]);
 
+    // handler for changing inputs
     const handlerChangInput = (e) => {
         const { name, value, type, checked } = e.target;
         if (name.includes(".")) {
@@ -37,13 +48,16 @@ export default function UpdateAchievement() {
         }
     };
 
+    // handler for toggling present/ active state
     const ToggleHandler = () => setisToggled(!isToggled);
 
+    // handler for going back
     const handleBack = () => {
         navigate("/portfolio");
         console.log("Back to portfolio");
     };
 
+    //submit handler
     const handleSubmit = async (e) => {
         e.preventDefault();
 
@@ -67,12 +81,21 @@ export default function UpdateAchievement() {
         }, 3000);
     };
 
+    // options for month and year dropdown selects
     const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
     const years = [];
     for (let y = new Date().getFullYear(); y >= 1930; y--) years.push(y);
 
+    // shared input classes for styling
     const inputClass = "w-full px-4 py-3 border border-gray-200 rounded-xl text-sm text-gray-900 bg-white outline-none focus:border-[#007C77] focus:ring-2 focus:ring-[#007C77]/20 transition-all";
     const selectClass = "w-full px-4 py-3 border border-gray-200 rounded-xl text-sm text-gray-600 bg-white outline-none cursor-pointer focus:border-[#007C77] focus:ring-2 focus:ring-[#007C77]/20 transition-all";
+
+    // show loading state while the firebase is being fetched
+    if (loading) return (
+        <div className="min-h-screen bg-[#1a1a2e] flex items-center justify-center">
+            <p className="text-white text-sm">Loading...</p>
+        </div>
+    );
 
     return (
         <div className="min-h-screen bg-[#1a1a2e] flex items-start justify-center py-10 px-4">
