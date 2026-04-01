@@ -3,7 +3,13 @@ import { useNavigate, useParams } from "react-router-dom";
 import { db, auth } from "../../firebaseConfig";
 import { doc, getDoc, updateDoc, serverTimestamp } from "firebase/firestore";
 
-
+const mockEduEntry = {
+    degree: "B.S. Computer Science",
+    school: " University of Memphis",
+    location: "Memphis, TN",
+    dates: "Sep 2015 - Jun 2019",
+    desc: "General Concentration. Graduated with honors. Related coursework: Data Structures, Algorithms, Software Engineering, Databases.",
+};
 
 export default function update_edu() {
     // entry ID from URL and set up nav
