@@ -30,7 +30,6 @@ const HomePageCanvas = () => {
   return (
     // Outer canvas — fills the full viewport with no scrollbars
     // overflow-hidden prevents content from spilling outside the canvas
-    // bg-gradient applies once Tailwind (#25) is merged
     <div
       className='relative w-screen h-screen overflow-hidden bg-gradient-to-r from-teal-400 via-cyan-400 via-blue-500 to-purple-600'
       onClick={handleZoomOut}
@@ -63,17 +62,23 @@ const HomePageCanvas = () => {
         }}
       >
         <div className='absolute bottom-10 left-1/2 -translate-x-1/2 flex gap-4'>
-          {/* Navigates to signup page once #51 is complete */}
+
+          {/* Get Started — navigates to signup page #51 */}
           <button
             onClick={() => navigate('/signup')}
             className='px-6 py-2 bg-white text-purple-900 rounded-full font-semibold'
           >
             Get Started
           </button>
-          {/* Log In — will navigate to login page once #52 is complete */}
-          <button className='px-6 py-2 border border-white text-white rounded-full font-semibold'>
+
+          {/* Log In — navigates to login page #52 */}
+          <button
+            onClick={() => navigate('/login')}
+            className='px-6 py-2 border border-white text-white rounded-full font-semibold'
+          >
             Log In
           </button>
+
         </div>
       </ZoomWrapper>
 

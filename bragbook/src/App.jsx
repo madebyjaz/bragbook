@@ -6,6 +6,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import HomePageCanvas from './components/HomePageCanvas'
 import SignupPage from './components/SignupPage'
+import LoginPage from './components/LoginPage'
 
 const App = () => {
   return (
@@ -16,6 +17,9 @@ const App = () => {
 
         {/* Signup page: navigated to when user clicks Get Started */}
         <Route path='/signup' element={<SignupPage />} />
+
+        {/* Login page: navigated to when user clicks Log In */}
+        <Route path='/login' element={<LoginPage />} />
       </Routes>
     </BrowserRouter>
   )
