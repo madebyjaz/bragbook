@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import HomePageCanvas from './components/HomePageCanvas'
 import SignupPage from './components/SignupPage'
 import LoginPage from './components/LoginPage'
+import Usr_Portfolio from './components/Usr_Portfolio'
 
 const App = () => {
   return (
@@ -20,6 +21,9 @@ const App = () => {
 
         {/* Login page: navigated to when user clicks Log In */}
         <Route path='/login' element={<LoginPage />} />
+          
+        {/* Portfolio page: user's profile and entries */}
+        <Route path='/portfolio' element={<Usr_Portfolio />} />
       </Routes>
     </BrowserRouter>
   )
