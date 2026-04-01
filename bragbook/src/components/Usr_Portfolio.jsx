@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { db, auth } from "../firebaseConfig";
 import {collection, onSnapshot, orderBy, query} from "firebase/firestore";
 
-
-// sample data for now 
+// sample data 
 const user = {
     name: "John Doe",
     initials: "JD",
@@ -26,32 +26,33 @@ const user = {
     ],
 };
 
-
-// frames for each section of the profile 
-const FRAMES = [
-    { id: "overview",   x: 680,  y: 380,  w: 640, h: "420" },
-    { id: "profile",      label: "Profile",    x: 60,   y: 60,   w: 580, h: "800" },
-    { id: "education",    label: "Education",  x: 60,   y: 680,  w: 580, h: "380" },
-    { id: "achievements", label: "Achievements", x: 1360,  y: 60,   w: 580, h: "500"},
-];
-
-const CANVAS_W = 2060;
-const CANVAS_H = 1160;
-
-export default function Usr_Portfolio() {
-    // state to track which frame the usr is currently on (null = overview)
-    const [canvasFrame, setCanvasFrame] = useState(null);
-
-    // Firebase fetch could go here 
-
+ // mock education eentries
     const [educationEntries, setEducationEntries] = useState([
         { degree: "B.S. Computer Science", school: "Stanford University", location: "Stanford, CA", dates: "Sep 2015 - Jun 2019", desc: "Focused on software engineering and AI." },
         { degree: "M.S. Software Engineering", school: "MIT", location: "Cambridge, MA", dates: "Sep 2019 - Jun 2021", desc: "Specialized in distributed systems." },
     ]);
 
+// const navigate = useNavigate();
+
+// frames for each section of the profile 
+const FRAMES = [
+    { id: "name_card", label: "Profile", x: 750, y: 340, w: 480, h: 500 },
+    { id: "profile",      label: "About Me",     x: 60,   y: 60,   w: 580, h: 500   },
+    { id: "education",    label: "Education",  x: 60,   y: 680,  w: 580, h: 380 },
+    { id: "achievements", label: "Achievements", x: 1360,  y: 60,   w: 580, h: 400},
+];
+
+const CANVAS_W = 2060;
+const CANVAS_H = 1100;
+
+export default function Usr_Portfolio() {
+    // state to track which frame the usr is currently on (null = overview)
+    const [canvasFrame, setCanvasFrame] = useState(null);
+
     // state that will hold usr's education stored in firebase
     // const [educationEntries, setEducationEntries] = useState([]);
 
+    // firebase fetch for education entries (used ai to help write this useeffect funct.)
     useEffect(() => {
         if (!auth.currentUser) return;
         const q = query(collection(db, "users", auth.currentUser.uid, "education"), orderBy("createdAt", "desc"));
@@ -63,24 +64,9 @@ export default function Usr_Portfolio() {
     }, []);
 
 
-    // firebase fetch for education entries 
-    useEffect(() => {
-        if (!auth.currentUser) return;
-        const q = query(
-            collection(db, "users", auth.currentUser.uid, "education"),
-            orderBy("createdAt", "desc")
-        );
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            const entries = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            setEducationEntries(entries);
-        });
-        return () => unsubscribe();
-    }, []);
-
-
-
+    // handler to navigate to a specific frame ( clicking on a section in the overview/ using the prev/next buttons)
     const goTo = (frame) => setCanvasFrame(frame);
-    const goOverview = () => setCanvasFrame(null);
+    // const goOverview = () => setCanvasFrame(null);
 
     const currentIdx = FRAMES.findIndex(f => f.id === canvasFrame?.id);
     const prevFrame  = currentIdx > 0 ? FRAMES[currentIdx - 1] : null;
@@ -88,6 +74,7 @@ export default function Usr_Portfolio() {
 
     // making a zoom/pan for the canvas
     const getCanvasTransform = () => {
+        //get the viewport dimensions 
         const vw = window.innerWidth  || 1280;
         const vh = (window.innerHeight || 800) - 52;
 
@@ -101,6 +88,7 @@ export default function Usr_Portfolio() {
             return `scale(${scale}) translate(${tx}px, ${ty}px)`;
         }
 
+        // zoom into the selected frame (added some padding just to make it look better) 
         const scaleX = (vw * 0.88) / canvasFrame.w;
         const scaleY = (vh * 0.88) / canvasFrame.h;
         const scale  = Math.min(scaleX, scaleY, 1.9);
@@ -111,14 +99,11 @@ export default function Usr_Portfolio() {
         return `scale(${scale}) translate(${tx}px, ${ty}px)`;
     };
 
-
     return (
         <div className="fixed inset-0 flex flex-col overflow-hidden " style={{background: "#f0f4f8" }}>
             {/* Nav Bar */}
             <nav className="bg-white border-b border-gray-200 flex items-center justify-between px-6 z-50 shrink-0 shadow-sm " style={{ height: 52 }}>
-                <span className="text-xl font-bold " style={{ background: "linear-gradient(90deg, #003C61, #007C77, #0d9488)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text"  }}>
-                    BragBook.cv 
-                </span>
+                <span className="text-xl font-bold " style={{ background: "linear-gradient(90deg, #003C61, #007C77, #0d9488)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text"  }}> BragBook.cv  </span>
                 <div className="flex items-center gap-3 ">
                     <button className="ext-xl text-[#003C61] bg-transparent border-none cursor-pointer "> ☰ </button>
                 </div>
@@ -130,43 +115,42 @@ export default function Usr_Portfolio() {
 
                     {/* frame labels for the overview */}
                     {!canvasFrame && FRAMES.map(f => (
-                        <div key={f.id + "-1b1"} className=" absolute text-[10px] font-bold text-[#007C77] uppercase tracking-widest pointer-events-none" style={{left: f.x + f.w / 2, top: f.y - 20, transform: "translateX(-50%)"}}>
-                            {f.label}
-                        </div>
+                        <div key={f.id + "-1b1"} className="absolute text-[10px] font-bold text-[#007C77] uppercase tracking-widest pointer-events-none" style={{left: f.x + f.w / 2, top: f.y - 20, transform: "translateX(-50%)"}}> {f.label} </div>
                     ))}
 
-                    {/* Profile card frames */}    
-                    <FrameCard frame={FRAMES[1]} active={canvasFrame?.id === "profile"} onClick={ () => goTo(FRAMES[1])}>
-                        <div className="absolute top-0 left-0 right-0 h-16 rounded-t-2xl" style={{ background: "linear-gradient(90deg, #007C77, #0d9488, #003C61)" }} />
-                        
-                        {/* avatar + name row */}
-                        <div className="absolute left-6 right-6" style={{top: 36}}>
+                    {/* Update: made a name card (for the center of the canvas I figured user's profiles could get long) */}
+                    <FrameCard frame={FRAMES[0]} active={canvasFrame?.id === "name_card"} onClick={() => goTo(FRAMES[0])}>
+                        {/* gradient banner (shorter because it was clipping profile photo)  */}
+                        <div className="absolute top-0 left-0 right-0 h-16 rounded-t-2xl"
+                            style={{ background: "linear-gradient(135deg, #007C77, #0d9488, #003C61)" }} />
+
+                        {/* avatar + name (pushed it down a bit to be clear from the banner)  */}
+                        <div className="flex flex-col items-center" style={{ marginTop: 40 }}>
+                            <div className="w-20 h-20 rounded-full flex items-center justify-center text-white text-3xl font-extrabold border-4 border-white shadow-lg"
+                                style={{ background: "linear-gradient(135deg, #007C77, #0d9488)" }}>
+                                {user.initials}
+                            </div>
+                            <p className="text-xl font-extrabold text-[#003C61] mt-3">{user.name}</p>
+                            <p className="text-xs text-gray-400 text-center mt-1 leading-snug px-4">{user.tagline}</p>
+                            <p className="text-[10px] text-gray-300 mt-1">📍 {user.location}</p>
+                        </div>
+                    </FrameCard>
+
+                    {/* Profile details frames */}    
+                    <FrameCard frame={FRAMES[1]} active={canvasFrame?.id === "profile"} onClick={() => goTo(FRAMES[1])}>
+                        <div className="absolute left-6 right-6" style={{ top: 36 }}>
                             <div className="flex items-end gap-4">
-                                <div className="w-14 h-14 rounded-full flex items-center justify-center text-white text-xl font-extrabold border-2 border-white shadow shrink-0" style={{ background: "linear-gradient(135deg, #007C77, #0d9488)" }}>
-                                    {user.initials}
-                                </div>
                                 <div className="flex-1 pb-1">
-                                    <p className="text-base font-extrabold text-[#003C61]">{user.name}</p>
-                                    <p className="text-[10px] text-gray-400 leading-snug">{user.tagline}</p>
                                     <p className="text-[10px] text-gray-300 mt-1">📍 {user.location} · ✉️ {user.email}</p>
                                 </div>
-                                <button className="self-start bg-gray-100 hover:bg-gray-200 text-[#003C61] text-[10px] font-semibold px-3 py-1.5 rounded-lg transition-colors border-none cursor-pointer">
-                                    Edit Profile
-                                </button>
+                                <button /* onClick={(e) => { e.stopPropagation(); navigate("/profile/edit")}} */ className="self-start bg-gray-100 hover:bg-gray-200 text-[#003C61] text-[10px] font-semibold px-3 py-1.5 rounded-lg transition-colors border-none cursor-pointer"> Edit Profile </button>
                             </div>
-                        </div>     
-
-                        {/* bio */}
-                            <p className="text-[11px] text-gray-400 mb-4">{user.bio}</p>
-
-                            {/* socials grid */}
+                            <p className="text-[11px] text-gray-400 mt-4 mb-3">{user.bio}</p>
                             <p className="text-xs font-extrabold text-[#003C61] mb-2">Connect</p>
                             <div className="grid grid-cols-2 gap-2">
                                 {user.socials.map((soc, i) => (
                                     <div key={i} className="border border-gray-200 rounded-xl p-2.5 flex gap-2.5 items-center hover:border-[#007C77] transition-colors cursor-pointer">
-                                        <div className="w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-extrabold text-[#007C77] shrink-0" style={{ background: "rgba(0,124,119,0.08)" }}>
-                                            {soc.icon}
-                                        </div>
+                                        <div className="w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-extrabold text-[#007C77] shrink-0" style={{ background: "rgba(0,124,119,0.08)" }}> {soc.icon} </div>
                                         <div>
                                             <p className="text-[11px] font-bold text-[#003C61]">{soc.platform}</p>
                                             <p className="text-[9px] text-gray-300">{soc.url}</p>
@@ -174,21 +158,21 @@ export default function Usr_Portfolio() {
                                     </div>
                                 ))}
                             </div>
-
+                        </div>
                     </FrameCard>
 
                     {/* education frame */}
                     <FrameCard frame={FRAMES[2]} active={canvasFrame?.id === "education"} onClick={() => goTo(FRAMES[2])}>
                         <div className="flex justify-between items-center mb-3 "> 
                             <p className="text-sm font-extrabold text-[#003C61] "> Education</p>
-                            <button className="bg-[#007C77] hover:bg-[#005f5b] text-white text-[10px] font-bold px-3 py-1.5 rounded-lg transition-colors border-none cursor-pointer "> + New Education </button> {/* route the usr to create_education form */}
+                            <button /* onClick={(e) => {e.stopPropagation(); navigate("/education/create")}} */ className="bg-[#007C77] hover:bg-[#005f5b] text-white text-[10px] font-bold px-3 py-1.5 rounded-lg transition-colors border-none cursor-pointer "> + New Education </button> {/* route the usr to create_education form */}
                         </div>
-                        {/* education cards for each entry */}
+                        {/* education cards for each entry (could add carousel for Sprint 4 to flip through entries??) */}
                         {educationEntries.length === 0 ? (
                             <p className="text-xs text-gray-300 mt-4 text-center">No education entries yet. Click "Add Education" to get started!</p>
                         ) : (
                             educationEntries.map((edu, i) => (
-                                <div key={i} className={`flex gap-3 p-3 mb-2 border border-gray-100 rounded-xl hover:border-[#007C77]/40 transition-colors`} >
+                                <div key={i} /* onClick={(e) => { e.stopPropagation(); navigate(`/education/view/${edu.id}`) }} */ className={`flex gap-3 p-3 mb-2 border border-gray-100 rounded-xl hover:border-[#007C77]/40 transition-colors`} >
                                     <div>
                                         <p className="text-sm font-semibold text-[#003C61]">{edu.degree}</p>
                                         <p className="text-[10px] text-gray-400">{edu.school} | {edu.location} </p>
@@ -204,17 +188,20 @@ export default function Usr_Portfolio() {
                     <FrameCard frame={FRAMES[3]} active={canvasFrame?.id === "achievements"} onClick={() => goTo(FRAMES[3])}>
                         <div className="flex justify-between items-center mb-3 "> 
                             <p className="text-sm font-extrabold text-[#003C61] "> Achievements</p>
-                            <button className="bg-[#007C77] hover:bg-[#005f5b] text-white text-[10px] font-bold px-3 py-1.5 rounded-lg transition-colors border-none cursor-pointer "> + Add New Entry</button> {/* route the usr to achievement_create form */}
+                            <button /* onClick={(e) => {e.stopPropagation(); navigate("/achievements/create")}} */ className="bg-[#007C77] hover:bg-[#005f5b] text-white text-[10px] font-bold px-3 py-1.5 rounded-lg transition-colors border-none cursor-pointer "> + Add New Entry</button> {/* route the usr to achievement_create form */}
                         </div>
+
                         {/* achievement cards for each entry */}
                         <div>
                             {user.achievements.map((b_entry, i) => (
                                 <div key={i} className="border border-gray-200 rounded-xl p-3 flex flex-col gap-1 hover:border-[#007C77] transition-colors cursor-pointer">
-                                    <div>
+                                    <div> {/* Brag entry component would go here */}
+                                        {/* 
                                         <p className="text-[11px] font-bold text-[#003C61]">{b_entry.title}</p>
                                         <p className="text-[10px] text-gray-400">{b_entry.company}</p>
                                         <p className="text-[10px] text-gray-400">{b_entry.dates}</p>
                                         <span className="text-[10px] text-[#007C77] font-semibold mt-1">View details →</span>
+                                        */}
                                     </div>
                                 </div>
                             ))}
@@ -224,12 +211,28 @@ export default function Usr_Portfolio() {
                 </div>
             </div>
 
+            {/* Prev arrow (to go through each frame) */}
+            {canvasFrame && prevFrame && (
+                <button onClick={() => goTo(prevFrame)}
+                    className="fixed left-4 top-1/2 -translate-y-1/2 w-11 h-11 bg-white/90 shadow-lg rounded-full text-2xl text-[#003C61] flex items-center justify-center z-50 border-none cursor-pointer hover:bg-white transition-colors">
+                    ‹
+                </button>
+            )}
+            
+            {/* Next arrow (to go through each frame)*/}
+            {canvasFrame && nextFrame && (
+                <button onClick={() => goTo(nextFrame)}
+                    className="fixed right-4 top-1/2 -translate-y-1/2 w-11 h-11 bg-white/90 shadow-lg rounded-full text-2xl text-[#003C61] flex items-center justify-center z-50 border-none cursor-pointer hover:bg-white transition-colors">
+                    ›
+                </button>
+            )}
+
         </div>
 
     );
 }
 
-// Reusable Frame Card component for each section 
+// Reusable Frame Card component for each section (to satisfy the fluid UI design requirement for our Sponsor)
 function FrameCard({ frame, active, onClick, children }) {
     return (
         <div onClick={onClick} style={{ position: "absolute", left: frame.x, top: frame.y, width: frame.w, height: frame.h, padding: 28, boxSizing: "border-box", borderRadius: 20, backgroundColor: "#ffffff", boxShadow: active ? "0 0 0 3px #007C77, 0 24px 60px rgba(0,0,0,0.18)" : "0 4px 24px rgba(0,0,0,0.08)", overflow: "hidden", cursor: active ? "default" : "pointer", transition: "box-shadow 0.2s ease"}} 
