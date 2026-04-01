@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { motion } from "motion/react";
-// import { useNavigate } from "react-router-dom";
-
-
-// import { db, auth } from "../../firebase/firebase";
-// import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { useNavigate } from "react-router-dom";
+import { db, auth } from "../../firebase/firebase";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 
 export default function create_achievement_entry_form() {
 
+    // form state and nav
+    const navigate = useNavigate();
     const [createFormData, setCreateData] = useState({
         title: "",
         company: "",
@@ -16,6 +16,10 @@ export default function create_achievement_entry_form() {
         dateCompleted: { month: "", year: "" },             //will have a 'Present' toggle and two dropdown fields for month and year 
         isPresent: false,                                  // for the 'Present' toggle (when toggled, the completed fields would not be required)   
     });
+
+    // notif and toggle state
+    const [isToggled, setisToggled] = useState(false);
+    const [showNotif, setshowNotif] = useState(false);
 
     // handler for all inputs (for now, just one handler for all fields to make sure it works)
     const handleInputChange = (e) => {
@@ -37,19 +41,32 @@ export default function create_achievement_entry_form() {
         }
     };
 
+    // handler for toggling Present (for date completed)
     const ToggleHandler = () => setisToggled(!isToggled);
 
+    // submission handler w/ Firebase logic (used ai to help with the firebase logic)
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        // Firebase write 
+        
+        try {
+            await addDoc(collection(db, "users", auth.currentUser.uid, "achievements"), {
+                ...createFormData,
+                isPresent: isToggled,
+                createdAt: serverTimestamp(),
+            });
+        } catch (error) {
+            console.error("Error saving entry:", error);
+            return;
+        }
 
 
 
-        console.log("Form data:", createFormData);
-        setShowNotification(true);
-        setTimeout(() => setShowNotification(false), 3000);
-
+        // (For debugging purposes) notif/ nav back
+        console.log("Entry has been created:", createFormData);
+        setshowNotif(true);
+        setTimeout(() => setshowNotif(false), 3000);
+        // reset form and toggle, then nav back 
         setCreateData({
             title: "",
             company: "",
@@ -59,14 +76,16 @@ export default function create_achievement_entry_form() {
             isPresent: false,
         });
         setisToggled(false);
-        // navigate("/portfolio");
+        navigate("/portfolio");
     };
 
+    // handler for going back
     const handleBack = () => {
-        console.log("back to portfolio");
-        // navigate("/portfolio");
+        console.log("Back to portfolio");
+        navigate("/portfolio");
     };
 
+    // Dropdown options for months/ years 
     const months = [
         "January","February","March","April","May","June",
         "July","August","September","October","November","December",
@@ -76,6 +95,7 @@ export default function create_achievement_entry_form() {
     const currentYear = new Date().getFullYear();
     for (let year = currentYear; year >= 1930; year--) years.push(year);
 
+    // Shared input classes for styling
     const inputClass = "w-full px-4 py-3 border border-gray-200 rounded-xl text-sm text-gray-900 bg-white outline-none focus:border-[#007C77] focus:ring-2 focus:ring-[#007C77]/20 transition-all";
     const selectClass = "w-full px-4 py-3 border border-gray-200 rounded-xl text-sm text-gray-600 bg-white outline-none cursor-pointer focus:border-[#007C77] focus:ring-2 focus:ring-[#007C77]/20 transition-all";
     const labelClass = "text-sm font-semibold text-[#003C61]";
@@ -91,7 +111,7 @@ export default function create_achievement_entry_form() {
             >
                 {/* Header */}
                 <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-2xl font-bold text-[#003C61]">Create a New Achievement Entry</h2>
+                    <h2 className="text-2xl font-bold text-[#003C61]">+ New Achievement </h2>
                     <button type="button" onClick={handleBack}
                         className="text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg px-2 py-1 text-lg transition-colors">
                         ✕
@@ -218,9 +238,9 @@ export default function create_achievement_entry_form() {
                 </form>
             </motion.div>
 
-            {/* Toast notification */}
+           {/* Toast notification */}
             <AnimatePresence>
-                {showNotification && (
+                {showNotif && (
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -233,4 +253,4 @@ export default function create_achievement_entry_form() {
             </AnimatePresence>
         </div>
     );
-}
+} 
