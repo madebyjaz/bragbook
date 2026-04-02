@@ -6,9 +6,10 @@
 import { useState } from 'react'
 import { createUserWithEmailAndPassword } from 'firebase/auth'
 import { auth } from '../firebaseConfig'
+import { useNavigate } from 'react-router-dom'
 
 const SignupPage = ({ onSwitchToLogin }) => {
-
+  const navigate = useNavigate()
   // Form field state
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
@@ -48,8 +49,9 @@ const SignupPage = ({ onSwitchToLogin }) => {
       // Create user account in Firebase Authentication
       await createUserWithEmailAndPassword(auth, email, password)
 
-      // TODO: redirect to dashboard once #58 routes are set up
-      console.log('Account created successfully for:', email)
+      // Redirect to portfolio after successful account creation
+      navigate('/portfolio')
+
 
     } catch (err) {
       // Display Firebase error message to the user

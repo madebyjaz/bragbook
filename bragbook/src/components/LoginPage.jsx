@@ -42,8 +42,9 @@ const LoginPage = () => {
       // Sign in existing user via Firebase Authentication
       await signInWithEmailAndPassword(auth, email, password)
 
-      // TODO: redirect to dashboard once #58 routes are set up
-      console.log('Login successful for:', email)
+      // 0redirect to dashboard once #58 routes are set up
+      navigate('/portfolio')
+
 
     } catch (err) {
       // Display Firebase error message to the user
