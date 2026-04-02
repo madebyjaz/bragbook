@@ -20,7 +20,8 @@ Brag Book provides users with an easy-to-use interface which maintains a profess
 ---
 
 ## Prerequisites
-
+1. npm install
+2. npm run dev
 ---
 
 ## Past Resources
@@ -29,3 +30,4 @@ Demo Day #1 PPT: <a href = "https://1drv.ms/p/c/6683f44a98a14934/IQD8asQsjFLdR5g
 
 Demo Day #2 PPT: <a href = "https://1drv.ms/p/c/6683f44a98a14934/IQAeJ77cMPbzR62OFTScaMGsATWfwpHANBHCjc6ct0bOmaA?e=zPfhjQ"  target = "_blank">  <em><u>Demo Day 2 PPT</u></em> </a>
 
+Demo Day #3 PPT: <a href = "https://livememphis-my.sharepoint.com/:p:/g/personal/kjhns122_memphis_edu/IQCbtSMzTEqdSpzMs2HeF_HcAX0STxzQkTWuD5NLTuUWQAg?rtime=6oldFO2Q3kg" target = "_blank">   <em><u>Demo Day 3 PPT</u></em> </a>
