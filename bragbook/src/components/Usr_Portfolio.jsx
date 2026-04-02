@@ -11,7 +11,6 @@ const user = {
     location: "San Francisco, CA",
     email: "john.doe@example.com",
     bio: "Passionate software engineer with 5+ years of experience.", 
-
     achievements: [
         { title: "E-Commerce Platform Development", company: "Tech Solutions Inc.", dates: "Jan 2022 - Dec 2023" },
         { title: "AI-Powered Analytics Dashboard",  company: "Data Insights Corp",  dates: "Mar 2021 - Aug 2021" },
@@ -25,12 +24,6 @@ const user = {
         { platform: "Portfolio", url: "johndoe.com",             icon: "PF" },
     ],
 };
-
- // mock education eentries
-    const [educationEntries, setEducationEntries] = useState([
-        { degree: "B.S. Computer Science", school: "Stanford University", location: "Stanford, CA", dates: "Sep 2015 - Jun 2019", desc: "Focused on software engineering and AI." },
-        { degree: "M.S. Software Engineering", school: "MIT", location: "Cambridge, MA", dates: "Sep 2019 - Jun 2021", desc: "Specialized in distributed systems." },
-    ]);
 
 // const navigate = useNavigate();
 
@@ -49,8 +42,11 @@ export default function Usr_Portfolio() {
     // state to track which frame the usr is currently on (null = overview)
     const [canvasFrame, setCanvasFrame] = useState(null);
 
-    // state that will hold usr's education stored in firebase
-    // const [educationEntries, setEducationEntries] = useState([]);
+    // mock education entries — moved inside component to fix invalid hook call error
+    const [educationEntries, setEducationEntries] = useState([
+        { degree: "B.S. Computer Science", school: "Stanford University", location: "Stanford, CA", dates: "Sep 2015 - Jun 2019", desc: "Focused on software engineering and AI." },
+        { degree: "M.S. Software Engineering", school: "MIT", location: "Cambridge, MA", dates: "Sep 2019 - Jun 2021", desc: "Specialized in distributed systems." },
+    ]);
 
     // firebase fetch for education entries (used ai to help write this useeffect funct.)
     useEffect(() => {
@@ -62,7 +58,6 @@ export default function Usr_Portfolio() {
         });
         return () => unsubscribe();
     }, []);
-
 
     // handler to navigate to a specific frame ( clicking on a section in the overview/ using the prev/next buttons)
     const goTo = (frame) => setCanvasFrame(frame);
@@ -165,7 +160,7 @@ export default function Usr_Portfolio() {
                     <FrameCard frame={FRAMES[2]} active={canvasFrame?.id === "education"} onClick={() => goTo(FRAMES[2])}>
                         <div className="flex justify-between items-center mb-3 "> 
                             <p className="text-sm font-extrabold text-[#003C61] "> Education</p>
-                            <button /* onClick={(e) => {e.stopPropagation(); navigate("/education/create")}} */ className="bg-[#007C77] hover:bg-[#005f5b] text-white text-[10px] font-bold px-3 py-1.5 rounded-lg transition-colors border-none cursor-pointer "> + New Education </button> {/* route the usr to create_education form */}
+                            <button /* onClick={(e) => {e.stopPropagation(); navigate("/education/create")}} */ className="bg-[#007C77] hover:bg-[#005f5b] text-white text-[10px] font-bold px-3 py-1.5 rounded-lg transition-colors border-none cursor-pointer "> + New Education </button>
                         </div>
                         {/* education cards for each entry (could add carousel for Sprint 4 to flip through entries??) */}
                         {educationEntries.length === 0 ? (
@@ -188,14 +183,14 @@ export default function Usr_Portfolio() {
                     <FrameCard frame={FRAMES[3]} active={canvasFrame?.id === "achievements"} onClick={() => goTo(FRAMES[3])}>
                         <div className="flex justify-between items-center mb-3 "> 
                             <p className="text-sm font-extrabold text-[#003C61] "> Achievements</p>
-                            <button /* onClick={(e) => {e.stopPropagation(); navigate("/achievements/create")}} */ className="bg-[#007C77] hover:bg-[#005f5b] text-white text-[10px] font-bold px-3 py-1.5 rounded-lg transition-colors border-none cursor-pointer "> + Add New Entry</button> {/* route the usr to achievement_create form */}
+                            <button /* onClick={(e) => {e.stopPropagation(); navigate("/achievements/create")}} */ className="bg-[#007C77] hover:bg-[#005f5b] text-white text-[10px] font-bold px-3 py-1.5 rounded-lg transition-colors border-none cursor-pointer "> + Add New Entry</button>
                         </div>
 
                         {/* achievement cards for each entry */}
                         <div>
                             {user.achievements.map((b_entry, i) => (
                                 <div key={i} className="border border-gray-200 rounded-xl p-3 flex flex-col gap-1 hover:border-[#007C77] transition-colors cursor-pointer">
-                                    <div> {/* Brag entry component would go here */}
+                                    <div>
                                         {/* 
                                         <p className="text-[11px] font-bold text-[#003C61]">{b_entry.title}</p>
                                         <p className="text-[10px] text-gray-400">{b_entry.company}</p>
@@ -228,7 +223,6 @@ export default function Usr_Portfolio() {
             )}
 
         </div>
-
     );
 }
 
