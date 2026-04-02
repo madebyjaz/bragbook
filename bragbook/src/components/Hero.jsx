@@ -1,3 +1,6 @@
+import { useState } from 'react'
+import ZoomWrapper from './ZoomWrapper'
+import { useNavigate } from 'react-router-dom'
 import { useEffect, useRef } from "react";
 
 const styles = `
@@ -62,6 +65,10 @@ const styles = `
 `;
 
 export default function Hero() {
+  // useNavigate hook for programmatic navigation to other pages
+  const navigate = useNavigate()
+
+
   const sceneRef  = useRef(null);
   const glow1Ref  = useRef(null);
   const glow2Ref  = useRef(null);
@@ -302,11 +309,20 @@ export default function Hero() {
           className="fu4"
           style={{ display: "flex", gap: 16, alignItems: "center" }}
         >
-          <button className="btn-primary">
-            Start Building Free <span style={{ fontSize: 18 }}>→</span>
+          {/* Get Started — navigates to signup page #51 */}
+          <button
+            onClick={() => navigate('/signup')}
+            className='px-6 py-2 bg-white text-purple-900 rounded-full font-semibold'
+          >
+            Get Started
           </button>
-          <button className="btn-secondary">
-            Sign In
+
+          {/* Log In — navigates to login page #52 */}
+          <button
+            onClick={() => navigate('/login')}
+            className='px-6 py-2 border border-white text-white rounded-full font-semibold'
+          >
+            Log In
           </button>
         </div>
       </div>

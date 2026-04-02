@@ -4,6 +4,7 @@
 // Additional routes will be added in issue #58.
 
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import Hero from './components/Hero'
 import HomePageCanvas from './components/HomePageCanvas'
 import SignupPage from './components/SignupPage'
 import LoginPage from './components/LoginPage'
@@ -14,7 +15,7 @@ const App = () => {
     <BrowserRouter>
       <Routes>
         {/* Homepage: main canvas with hero and ZUI experience */}
-        <Route path='/' element={<HomePageCanvas />} />
+        <Route path='/' element={<Hero />} />
 
         {/* Signup page: navigated to when user clicks Get Started */}
         <Route path='/signup' element={<SignupPage />} />
