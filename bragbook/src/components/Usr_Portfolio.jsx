@@ -61,7 +61,7 @@ export default function Usr_Portfolio() {
 
     // handler to navigate to a specific frame ( clicking on a section in the overview/ using the prev/next buttons)
     const goTo = (frame) => setCanvasFrame(frame);
-    // const goOverview = () => setCanvasFrame(null);
+    const goOverview = () => setCanvasFrame(null);
 
     const currentIdx = FRAMES.findIndex(f => f.id === canvasFrame?.id);
     const prevFrame  = currentIdx > 0 ? FRAMES[currentIdx - 1] : null;
@@ -100,9 +100,19 @@ export default function Usr_Portfolio() {
             <nav className="bg-white border-b border-gray-200 flex items-center justify-between px-6 z-50 shrink-0 shadow-sm " style={{ height: 52 }}>
                 <span className="text-xl font-bold " style={{ background: "linear-gradient(90deg, #003C61, #007C77, #0d9488)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text"  }}> BragBook.cv  </span>
                 <div className="flex items-center gap-3 ">
-                    <button className="ext-xl text-[#003C61] bg-transparent border-none cursor-pointer "> ☰ </button>
+                    <button className="text-sm font-semibold text-[#003C61] bg-gray-100 hover:bg-gray-100 px-4 py-1.5 rounded-lg transition-colors border-none cursor-pointer"> ☰ </button>
                 </div>
             </nav>
+
+            {/* Fix: button that exits the current frame view and goes back to the overview frame */}
+            <div className="flex items-center gap-3">
+                <button className="text-sm bg-transparent border-none cursor-pointer">
+                    {/* Was trying something with the gradient just might change it back to white button w/black text */}
+                    {canvasFrame && (
+                        <button onClick={goOverview} className="fixed top-16 right-3 z-60 text-sm font-semibold text-white bg-gradient-to-r from-[#003C61] via-[#007C77] to-[#0d9488]/90 shadow-lg px-4 py-2 rounded-xl"> x </button>
+                    )}  
+                </button> 
+            </div>
 
             {/* main content area */}
             <div className="flex-1 relative overflow-hidden "> {/* canvas view */}
