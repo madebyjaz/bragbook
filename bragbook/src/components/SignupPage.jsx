@@ -7,6 +7,8 @@ import { useState } from 'react'
 import { createUserWithEmailAndPassword } from 'firebase/auth'
 import { auth } from '../firebaseConfig'
 import { useNavigate } from 'react-router-dom'
+import { doc, setDoc } from 'firebase/firestore'
+import { db } from '../firebaseConfig'
 
 const SignupPage = ({ onSwitchToLogin }) => {
   const navigate = useNavigate()
@@ -46,8 +48,25 @@ const SignupPage = ({ onSwitchToLogin }) => {
     setLoading(true)
 
     try {
-      // Create user account in Firebase Authentication
-      await createUserWithEmailAndPassword(auth, email, password)
+      // Create Firebase Auth account
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password)
+
+// Save user profile data to Firestore under users/:uid
+      await setDoc(doc(db, 'users', userCredential.user.uid), {
+          name: name,
+          email: email,
+          tagline: '',
+          bio: '',
+          location: '',
+          avatar: '',
+          socials: {
+              linkedin: '',
+              github: '',
+              twitter: '',
+              portfolio: '',
+          },
+          createdAt: new Date().toISOString()
+      })
 
       // Redirect to portfolio after successful account creation
       navigate('/portfolio')
