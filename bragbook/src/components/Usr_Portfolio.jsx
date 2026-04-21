@@ -1,28 +1,16 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { db, auth } from "../firebaseConfig";
-import { collection, onSnapshot, orderBy, query } from "firebase/firestore";
+import { collection, onSnapshot, orderBy, query, doc, getDoc } from "firebase/firestore";
 import { signOut } from "firebase/auth";
 
-// sample data 
+// hardcoded achievements, This is temporary and will be replaced for issue #73 
 const user = {
-    name: "John Doe",
-    initials: "JD",
-    tagline: "Full-Stack Developer | UI/UX Enthusiast | Open Source Contributor",
-    location: "San Francisco, CA",
-    email: "john.doe@example.com",
-    bio: "Passionate software engineer with 5+ years of experience.", 
     achievements: [
         { title: "E-Commerce Platform Development", company: "Tech Solutions Inc.", dates: "Jan 2022 - Dec 2023" },
         { title: "AI-Powered Analytics Dashboard",  company: "Data Insights Corp",  dates: "Mar 2021 - Aug 2021" },
         { title: "Open Source Contribution - UI Lib", company: "GitHub Community",  dates: "Jun 2020 - Present" },
         { title: "Mobile App for Healthcare",        company: "HealthTech Startup",  dates: "Sep 2019 - Feb 2020" },
-    ],
-    socials: [
-        { platform: "LinkedIn",  url: "linkedin.com/in/johndoe", icon: "in" },
-        { platform: "GitHub",    url: "github.com/johndoe",      icon: "gh" },
-        { platform: "Twitter",   url: "twitter.com/johndoe",     icon: "tw" },
-        { platform: "Portfolio", url: "johndoe.com",             icon: "PF" },
     ],
 };
 
@@ -44,13 +32,32 @@ export default function Usr_Portfolio() {
     // useNavigate hook for redirecting after logout
     const navigate = useNavigate();
 
-    // mock education entries — moved inside component to fix invalid hook call error
+    // state to hold real user profile data fetched from Firestore
+    const [userData, setUserData] = useState(null);
+
+    // state to track loading while fetching user data from Firestore
+    const [profileLoading, setProfileLoading] = useState(true);
+
+    // mock education entries. Moved inside component to fix invalid hook call error
     const [educationEntries, setEducationEntries] = useState([
         { degree: "B.S. Computer Science", school: "Stanford University", location: "Stanford, CA", dates: "Sep 2015 - Jun 2019", desc: "Focused on software engineering and AI." },
         { degree: "M.S. Software Engineering", school: "MIT", location: "Cambridge, MA", dates: "Sep 2019 - Jun 2021", desc: "Specialized in distributed systems." },
     ]);
 
-    // firebase fetch for education entries (used ai to help write this useeffect funct.)
+    // fetch the logged-in user's profile data from Firestore
+    useEffect(() => {
+        if (!auth.currentUser) return;
+        const fetchProfile = async () => {
+            const docSnap = await getDoc(doc(db, 'users', auth.currentUser.uid));
+            if (docSnap.exists()) {
+                setUserData(docSnap.data());
+            }
+            setProfileLoading(false);
+        };
+        fetchProfile();
+    }, []);
+
+    // firebase fetch for education entries. I used ai to help write this useeffect funct bc I could not figure it out.
     useEffect(() => {
         if (!auth.currentUser) return;
         const q = query(collection(db, "users", auth.currentUser.uid, "education"), orderBy("createdAt", "desc"));
@@ -61,13 +68,13 @@ export default function Usr_Portfolio() {
         return () => unsubscribe();
     }, []);
 
-    // handler for logging out — signs out of Firebase and redirects to homepage
+    // This allows user to sign out of Firebase and be redirected to homepage
     const handleLogout = async () => {
         await signOut(auth);
         navigate("/");
     };
 
-    // handler to navigate to a specific frame ( clicking on a section in the overview/ using the prev/next buttons)
+    // Acts as a handler to navigate to a specific frame
     const goTo = (frame) => setCanvasFrame(frame);
     // const goOverview = () => setCanvasFrame(null);
 
@@ -98,6 +105,13 @@ export default function Usr_Portfolio() {
         const ty = vh / 2 / scale - cy;
         return `scale(${scale}) translate(${tx}px, ${ty}px)`;
     };
+
+    // shows a  loading indicator while fetching profile data from Firebase
+    if (profileLoading) return (
+        <div className="fixed inset-0 flex items-center justify-center bg-[#f0f4f8]">
+            <p className="text-[#007C77] font-semibold text-sm">Loading your portfolio...</p>
+        </div>
+    );
 
     return (
         <div className="fixed inset-0 flex flex-col overflow-hidden" style={{background: "#f0f4f8"}}>
@@ -130,11 +144,12 @@ export default function Usr_Portfolio() {
                         <div className="flex flex-col items-center" style={{ marginTop: 40 }}>
                             <div className="w-20 h-20 rounded-full flex items-center justify-center text-white text-3xl font-extrabold border-4 border-white shadow-lg"
                                 style={{ background: "linear-gradient(135deg, #007C77, #0d9488)" }}>
-                                {user.initials}
+                                {/* compute initials from real user name from Firestore (#73) */}
+                                {userData?.name?.split(' ').map(n => n[0]).join('').toUpperCase() || '?'}
                             </div>
-                            <p className="text-xl font-extrabold text-[#003C61] mt-3">{user.name}</p>
-                            <p className="text-xs text-gray-400 text-center mt-1 leading-snug px-4">{user.tagline}</p>
-                            <p className="text-[10px] text-gray-300 mt-1">📍 {user.location}</p>
+                            <p className="text-xl font-extrabold text-[#003C61] mt-3">{userData?.name || 'Your Name'}</p>
+                            <p className="text-xs text-gray-400 text-center mt-1 leading-snug px-4">{userData?.tagline || 'Add a tagline in Edit Profile'}</p>
+                            <p className="text-[10px] text-gray-300 mt-1">📍 {userData?.location || ''}</p>
                         </div>
                     </FrameCard>
 
@@ -142,21 +157,26 @@ export default function Usr_Portfolio() {
                         <div className="absolute left-6 right-6" style={{ top: 36 }}>
                             <div className="flex items-end gap-4">
                                 <div className="flex-1 pb-1">
-                                    <p className="text-[10px] text-gray-300 mt-1">📍 {user.location} · ✉️ {user.email}</p>
+                                    <p className="text-[10px] text-gray-300 mt-1">📍 {userData?.location || ''} · ✉️ {userData?.email || ''}</p>
                                 </div>
                                 <button /* onClick={(e) => { e.stopPropagation(); navigate("/profile/edit")}} */ className="self-start bg-gray-100 hover:bg-gray-200 text-[#003C61] text-[10px] font-semibold px-3 py-1.5 rounded-lg transition-colors border-none cursor-pointer"> Edit Profile </button>
                             </div>
-                            <p className="text-[11px] text-gray-400 mt-4 mb-3">{user.bio}</p>
+                            <p className="text-[11px] text-gray-400 mt-4 mb-3">{userData?.bio || 'Add a bio in Edit Profile'}</p>
                             <p className="text-xs font-extrabold text-[#003C61] mb-2">Connect</p>
                             <div className="grid grid-cols-2 gap-2">
-                                {user.socials.map((soc, i) => (
-                                    <div key={i} className="border border-gray-200 rounded-xl p-2.5 flex gap-2.5 items-center hover:border-[#007C77] transition-colors cursor-pointer">
-                                        <div className="w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-extrabold text-[#007C77] shrink-0" style={{ background: "rgba(0,124,119,0.08)" }}> {soc.icon} </div>
-                                        <div>
-                                            <p className="text-[11px] font-bold text-[#003C61]">{soc.platform}</p>
-                                            <p className="text-[9px] text-gray-300">{soc.url}</p>
+                                {/* socials from Firestore are stored as an object — convert to array for display */}
+                                {userData?.socials && Object.entries(userData.socials).map(([platform, url], i) => (
+                                    url ? (
+                                        <div key={i} className="border border-gray-200 rounded-xl p-2.5 flex gap-2.5 items-center hover:border-[#007C77] transition-colors cursor-pointer">
+                                            <div className="w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-extrabold text-[#007C77] shrink-0" style={{ background: "rgba(0,124,119,0.08)" }}>
+                                                {platform.slice(0, 2).toUpperCase()}
+                                            </div>
+                                            <div>
+                                                <p className="text-[11px] font-bold text-[#003C61] capitalize">{platform}</p>
+                                                <p className="text-[9px] text-gray-300 truncate">{url}</p>
+                                            </div>
                                         </div>
-                                    </div>
+                                    ) : null
                                 ))}
                             </div>
                         </div>
