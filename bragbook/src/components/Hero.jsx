@@ -1,7 +1,7 @@
-import { useState } from 'react'
-import ZoomWrapper from './ZoomWrapper'
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from 'react-router-dom'
-import { useEffect, useRef } from "react";
+import { onAuthStateChanged } from 'firebase/auth'
+import { auth } from '../firebaseConfig'
 
 const styles = `
   @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700;800&display=swap');
@@ -68,6 +68,19 @@ export default function Hero() {
   // useNavigate hook for programmatic navigation to other pages
   const navigate = useNavigate()
 
+  // Tracks whether a user is currently logged in (#81)
+  // null while checking, true if logged in, false if logged out
+  const [isLoggedIn, setIsLoggedIn] = useState(null)
+
+  // Listens to Firebase auth state changes and updates login status (#81)
+  // This runs once on mount and subscribes to future auth changes
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setIsLoggedIn(!!user)
+    })
+    // Cleanup the subscription when component unmounts
+    return () => unsubscribe()
+  }, [])
 
   const sceneRef  = useRef(null);
   const glow1Ref  = useRef(null);
@@ -304,28 +317,52 @@ export default function Hero() {
           Transform your professional story into an immersive portfolio experience
         </p>
 
-        {/* Buttons */}
+        {/* Buttons — show different options based on login state (#81) */}
         <div
           className="fu4"
           style={{ display: "flex", gap: 16, alignItems: "center" }}
         >
-          {/* Get Started — navigates to signup page #51 */}
-          <button
-            onClick={() => navigate('/signup')}
-            className='px-6 py-2 bg-white text-purple-900 rounded-full font-semibold'
-          >
-            Get Started
-          </button>
+          {isLoggedIn ? (
+            // Logged in: show a single button to go straight to their portfolio
+            <button
+              onClick={() => navigate('/portfolio')}
+              className='px-6 py-2 bg-white text-purple-900 rounded-full font-semibold'
+            >
+              Go to my portfolio
+            </button>
+          ) : (
+            // Logged out: show Get Started and Log In buttons
+            <>
+              {/* Get Started — navigates to signup page #51 */}
+              <button
+                onClick={() => navigate('/signup')}
+                className='px-6 py-2 bg-white text-purple-900 rounded-full font-semibold'
+              >
+                Get Started
+              </button>
 
-          {/* Log In — navigates to login page #52 */}
-          <button
-            onClick={() => navigate('/login')}
-            className='px-6 py-2 border border-white text-white rounded-full font-semibold'
-          >
-            Log In
-          </button>
+              {/* Log In — navigates to login page #52 */}
+              <button
+                onClick={() => navigate('/login')}
+                className='px-6 py-2 border border-white text-white rounded-full font-semibold'
+              >
+                Log In
+              </button>
+            </>
+          )}
         </div>
       </div>
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
