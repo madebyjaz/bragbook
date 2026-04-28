@@ -1,20 +1,10 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { db, auth } from "../firebaseConfig";
-import { collection, onSnapshot, orderBy, query, doc, getDoc } from "firebase/firestore";
-import { signOut } from "firebase/auth";
+import { collection, onSnapshot, orderBy, query, doc, getDoc, deleteDoc } from "firebase/firestore";
+import { signOut, onAuthStateChanged } from "firebase/auth";
 
-// hardcoded achievements, This is temporary and will be replaced for issue #73 
-const user = {
-    achievements: [
-        { title: "E-Commerce Platform Development", company: "Tech Solutions Inc.", dates: "Jan 2022 - Dec 2023" },
-        { title: "AI-Powered Analytics Dashboard",  company: "Data Insights Corp",  dates: "Mar 2021 - Aug 2021" },
-        { title: "Open Source Contribution - UI Lib", company: "GitHub Community",  dates: "Jun 2020 - Present" },
-        { title: "Mobile App for Healthcare",        company: "HealthTech Startup",  dates: "Sep 2019 - Feb 2020" },
-    ],
-};
-
-// frames for each section of the profile 
+// frames for each section of the profile
 const FRAMES = [
     { id: "name_card", label: "Profile", x: 750, y: 340, w: 480, h: 500 },
     { id: "profile",      label: "About Me",     x: 60,   y: 60,   w: 580, h: 500   },
@@ -38,40 +28,77 @@ export default function Usr_Portfolio() {
     // state to track loading while fetching user data from Firestore
     const [profileLoading, setProfileLoading] = useState(true);
 
+    // state to hold the authenticated user once Firebase Auth is ready
+    const [currentUser, setCurrentUser] = useState(null);
+
     // mock education entries. Moved inside component to fix invalid hook call error
     const [educationEntries, setEducationEntries] = useState([
         { degree: "B.S. Computer Science", school: "Stanford University", location: "Stanford, CA", dates: "Sep 2015 - Jun 2019", desc: "Focused on software engineering and AI." },
         { degree: "M.S. Software Engineering", school: "MIT", location: "Cambridge, MA", dates: "Sep 2019 - Jun 2021", desc: "Specialized in distributed systems." },
     ]);
 
+    // wait for Firebase Auth to initialize before fetching any data
+    useEffect(() => {
+        const unsubscribe = onAuthStateChanged(auth, (user) => {
+            setCurrentUser(user);
+            if (!user) {
+                setProfileLoading(false);
+            }
+        });
+        return () => unsubscribe();
+    }, []);
+
     // fetch the logged-in user's profile data from Firestore
     useEffect(() => {
-        if (!auth.currentUser) return;
+        if (!currentUser) return;
         const fetchProfile = async () => {
-            const docSnap = await getDoc(doc(db, 'users', auth.currentUser.uid));
+            const docSnap = await getDoc(doc(db, 'users', currentUser.uid));
             if (docSnap.exists()) {
                 setUserData(docSnap.data());
             }
             setProfileLoading(false);
         };
         fetchProfile();
-    }, []);
+    }, [currentUser]);
 
     // firebase fetch for education entries. I used ai to help write this useeffect funct bc I could not figure it out.
     useEffect(() => {
-        if (!auth.currentUser) return;
-        const q = query(collection(db, "users", auth.currentUser.uid, "education"), orderBy("createdAt", "desc"));
+        if (!currentUser) return;
+        const q = query(collection(db, "users", currentUser.uid, "education"), orderBy("createdAt", "desc"));
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const entries = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             setEducationEntries(entries);
         });
         return () => unsubscribe();
-    }, []);
+    }, [currentUser]);
+
+    // firebase fetch for achievement entries (#75)
+    const [achievementEntries, setAchievementEntries] = useState([]);
+
+    // tracks which achievement card is expanded to show details (#90)
+    const [expandedAchievement, setExpandedAchievement] = useState(null);
+
+    useEffect(() => {
+        if (!currentUser) return;
+        const q = query(collection(db, "users", currentUser.uid, "achievements"), orderBy("createdAt", "desc"));
+        const unsub = onSnapshot(q, (snapshot) => {
+            const entries = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+            setAchievementEntries(entries);
+        });
+        return () => unsub();
+    }, [currentUser]);
 
     // This allows user to sign out of Firebase and be redirected to homepage
     const handleLogout = async () => {
         await signOut(auth);
         navigate("/");
+    };
+
+    // deletes an achievement entry from Firestore (#78)
+    const handleDeleteAchievement = async (e, entryId) => {
+        e.stopPropagation();
+        if (!window.confirm("Are you sure you want to delete this achievement?")) return;
+        await deleteDoc(doc(db, "users", currentUser.uid, "achievements", entryId));
     };
 
     // Acts as a handler to navigate to a specific frame
@@ -119,6 +146,17 @@ export default function Usr_Portfolio() {
             <nav className="bg-white border-b border-gray-200 flex items-center justify-between px-6 z-50 shrink-0 shadow-sm" style={{ height: 52 }}>
                 <span className="text-xl font-bold" style={{ background: "linear-gradient(90deg, #003C61, #007C77, #0d9488)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}> BragBook.cv </span>
                 <div className="flex items-center gap-3">
+                    {/* Share portfolio link button (#77) */}
+                    <button
+                        onClick={() => {
+                            const link = `${window.location.origin}/u/${currentUser.uid}`;
+                            navigator.clipboard.writeText(link);
+                            alert("Portfolio link copied!");
+                        }}
+                        className="text-sm font-semibold text-[#007C77] bg-white border border-[#007C77] hover:bg-[#007C77] hover:text-white px-4 py-1.5 rounded-lg cursor-pointer transition-colors"
+                    >
+                        Share Portfolio
+                    </button>
                     {/* Logout button — signs out of Firebase and redirects to homepage */}
                     <button
                         onClick={handleLogout}
@@ -183,7 +221,7 @@ export default function Usr_Portfolio() {
                     </FrameCard>
 
                     <FrameCard frame={FRAMES[2]} active={canvasFrame?.id === "education"} onClick={() => goTo(FRAMES[2])}>
-                        <div className="flex justify-between items-center mb-3"> 
+                        <div className="flex justify-between items-center mb-3">
                             <p className="text-sm font-extrabold text-[#003C61]"> Education</p>
                             <button /* onClick={(e) => {e.stopPropagation(); navigate("/education/create")}} */ className="bg-[#007C77] hover:bg-[#005f5b] text-white text-[10px] font-bold px-3 py-1.5 rounded-lg transition-colors border-none cursor-pointer"> + New Education </button>
                         </div>
@@ -204,23 +242,46 @@ export default function Usr_Portfolio() {
                     </FrameCard>
 
                     <FrameCard frame={FRAMES[3]} active={canvasFrame?.id === "achievements"} onClick={() => goTo(FRAMES[3])}>
-                        <div className="flex justify-between items-center mb-3"> 
+                        <div className="flex justify-between items-center mb-3">
                             <p className="text-sm font-extrabold text-[#003C61]"> Achievements</p>
                             <button /* onClick={(e) => {e.stopPropagation(); navigate("/achievements/create")}} */ className="bg-[#007C77] hover:bg-[#005f5b] text-white text-[10px] font-bold px-3 py-1.5 rounded-lg transition-colors border-none cursor-pointer"> + Add New Entry</button>
                         </div>
+                        {/* achievement entries fetched from Firestore (#75) — replaces old hardcoded data */}
                         <div>
-                            {user.achievements.map((b_entry, i) => (
-                                <div key={i} className="border border-gray-200 rounded-xl p-3 flex flex-col gap-1 hover:border-[#007C77] transition-colors cursor-pointer">
-                                    <div>
-                                        {/* 
-                                        <p className="text-[11px] font-bold text-[#003C61]">{b_entry.title}</p>
-                                        <p className="text-[10px] text-gray-400">{b_entry.company}</p>
-                                        <p className="text-[10px] text-gray-400">{b_entry.dates}</p>
-                                        <span className="text-[10px] text-[#007C77] font-semibold mt-1">View details →</span>
-                                        */}
+                            {achievementEntries.length === 0 ? (
+                                <p className="text-xs text-gray-300 mt-4 text-center">No achievements yet. Click "+ Add New Entry" to get started!</p>
+                            ) : (
+                                achievementEntries.map((entry) => (
+                                    <div key={entry.id} className="border border-gray-200 rounded-xl p-3 mb-2 flex flex-col gap-1 hover:border-[#007C77] transition-colors cursor-pointer">
+                                        <p className="text-[11px] font-bold text-[#003C61]">{entry.title}</p>
+                                        <p className="text-[10px] text-gray-400">{entry.company || entry.category}</p>
+                                        <p className="text-[10px] text-gray-400">
+                                            {entry.dateStarted?.month} {entry.dateStarted?.year} — {entry.isPresent ? "Present" : `${entry.dateCompleted?.month} ${entry.dateCompleted?.year}`}
+                                        </p>
+                                        {/* toggle description visibility (#90) */}
+                                        <span
+                                            onClick={(e) => { e.stopPropagation(); setExpandedAchievement(expandedAchievement === entry.id ? null : entry.id); }}
+                                            className="text-[10px] text-[#007C77] font-semibold mt-1 cursor-pointer"
+                                        >
+                                            {expandedAchievement === entry.id ? "Hide details ↑" : "View details →"}
+                                        </span>
+                                        {/* expanded description view (#90) */}
+                                        {expandedAchievement === entry.id && (
+                                            <div className="mt-2 pt-2 border-t border-gray-100">
+                                                <p className="text-[10px] font-semibold text-[#003C61] mb-1">Description</p>
+                                                <p className="text-[10px] text-gray-400">{entry.description || "No description provided."}</p>
+                                            </div>
+                                        )}
+                                        {/* delete button for achievement entry (#78) */}
+                                        <button
+                                            onClick={(e) => handleDeleteAchievement(e, entry.id)}
+                                            className="text-[10px] text-red-400 hover:text-red-600 font-semibold mt-1 bg-transparent border-none cursor-pointer text-left p-0"
+                                        >
+                                            Delete
+                                        </button>
                                     </div>
-                                </div>
-                            ))}
+                                ))
+                            )}
                         </div>
                     </FrameCard>
 
@@ -234,7 +295,7 @@ export default function Usr_Portfolio() {
                     ‹
                 </button>
             )}
-            
+
             {/* Next arrow */}
             {canvasFrame && nextFrame && (
                 <button onClick={() => goTo(nextFrame)}
@@ -250,7 +311,7 @@ export default function Usr_Portfolio() {
 // Reusable Frame Card component for each section
 function FrameCard({ frame, active, onClick, children }) {
     return (
-        <div onClick={onClick} style={{ position: "absolute", left: frame.x, top: frame.y, width: frame.w, height: frame.h, padding: 28, boxSizing: "border-box", borderRadius: 20, backgroundColor: "#ffffff", boxShadow: active ? "0 0 0 3px #007C77, 0 24px 60px rgba(0,0,0,0.18)" : "0 4px 24px rgba(0,0,0,0.08)", overflow: "hidden", cursor: active ? "default" : "pointer", transition: "box-shadow 0.2s ease"}} 
+        <div onClick={onClick} style={{ position: "absolute", left: frame.x, top: frame.y, width: frame.w, height: frame.h, padding: 28, boxSizing: "border-box", borderRadius: 20, backgroundColor: "#ffffff", boxShadow: active ? "0 0 0 3px #007C77, 0 24px 60px rgba(0,0,0,0.18)" : "0 4px 24px rgba(0,0,0,0.08)", overflow: "hidden", cursor: active ? "default" : "pointer", transition: "box-shadow 0.2s ease"}}
         onMouseEnter={e => { if (!active) e.currentTarget.style.boxShadow = "0 0 0 2.5px #007C77, 0 12px 40px rgba(0,0,0,0.13)"; }} onMouseLeave={e => { if (!active) e.currentTarget.style.boxShadow = "0 4px 24px rgba(0,0,0,0.08)"; }}>
             {children}
         </div>
