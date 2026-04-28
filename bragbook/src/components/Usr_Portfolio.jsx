@@ -4,17 +4,7 @@ import { db, auth } from "../firebaseConfig";
 import { collection, onSnapshot, orderBy, query, doc, getDoc } from "firebase/firestore";
 import { signOut } from "firebase/auth";
 
-// hardcoded achievements, This is temporary and will be replaced for issue #73 
-const user = {
-    achievements: [
-        { title: "E-Commerce Platform Development", company: "Tech Solutions Inc.", dates: "Jan 2022 - Dec 2023" },
-        { title: "AI-Powered Analytics Dashboard",  company: "Data Insights Corp",  dates: "Mar 2021 - Aug 2021" },
-        { title: "Open Source Contribution - UI Lib", company: "GitHub Community",  dates: "Jun 2020 - Present" },
-        { title: "Mobile App for Healthcare",        company: "HealthTech Startup",  dates: "Sep 2019 - Feb 2020" },
-    ],
-};
-
-// frames for each section of the profile 
+// frames for each section of the profile
 const FRAMES = [
     { id: "name_card", label: "Profile", x: 750, y: 340, w: 480, h: 500 },
     { id: "profile",      label: "About Me",     x: 60,   y: 60,   w: 580, h: 500   },
@@ -66,6 +56,19 @@ export default function Usr_Portfolio() {
             setEducationEntries(entries);
         });
         return () => unsubscribe();
+    }, []);
+
+    // firebase fetch for achievement entries (#75)
+    const [achievementEntries, setAchievementEntries] = useState([]);
+
+    useEffect(() => {
+        if (!auth.currentUser) return;
+        const q = query(collection(db, "users", auth.currentUser.uid, "achievements"), orderBy("createdAt", "desc"));
+        const unsub = onSnapshot(q, (snapshot) => {
+            const entries = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+            setAchievementEntries(entries);
+        });
+        return () => unsub();
     }, []);
 
     // This allows user to sign out of Firebase and be redirected to homepage
@@ -183,7 +186,7 @@ export default function Usr_Portfolio() {
                     </FrameCard>
 
                     <FrameCard frame={FRAMES[2]} active={canvasFrame?.id === "education"} onClick={() => goTo(FRAMES[2])}>
-                        <div className="flex justify-between items-center mb-3"> 
+                        <div className="flex justify-between items-center mb-3">
                             <p className="text-sm font-extrabold text-[#003C61]"> Education</p>
                             <button /* onClick={(e) => {e.stopPropagation(); navigate("/education/create")}} */ className="bg-[#007C77] hover:bg-[#005f5b] text-white text-[10px] font-bold px-3 py-1.5 rounded-lg transition-colors border-none cursor-pointer"> + New Education </button>
                         </div>
@@ -204,23 +207,24 @@ export default function Usr_Portfolio() {
                     </FrameCard>
 
                     <FrameCard frame={FRAMES[3]} active={canvasFrame?.id === "achievements"} onClick={() => goTo(FRAMES[3])}>
-                        <div className="flex justify-between items-center mb-3"> 
+                        <div className="flex justify-between items-center mb-3">
                             <p className="text-sm font-extrabold text-[#003C61]"> Achievements</p>
                             <button /* onClick={(e) => {e.stopPropagation(); navigate("/achievements/create")}} */ className="bg-[#007C77] hover:bg-[#005f5b] text-white text-[10px] font-bold px-3 py-1.5 rounded-lg transition-colors border-none cursor-pointer"> + Add New Entry</button>
                         </div>
+                        {/* achievement entries fetched from Firestore (#75) — replaces old hardcoded data */}
                         <div>
-                            {user.achievements.map((b_entry, i) => (
-                                <div key={i} className="border border-gray-200 rounded-xl p-3 flex flex-col gap-1 hover:border-[#007C77] transition-colors cursor-pointer">
-                                    <div>
-                                        {/* 
-                                        <p className="text-[11px] font-bold text-[#003C61]">{b_entry.title}</p>
-                                        <p className="text-[10px] text-gray-400">{b_entry.company}</p>
-                                        <p className="text-[10px] text-gray-400">{b_entry.dates}</p>
+                            {achievementEntries.length === 0 ? (
+                                <p className="text-xs text-gray-300 mt-4 text-center">No achievements yet. Click "+ Add New Entry" to get started!</p>
+                            ) : (
+                                achievementEntries.map((entry) => (
+                                    <div key={entry.id} className="border border-gray-200 rounded-xl p-3 mb-2 flex flex-col gap-1 hover:border-[#007C77] transition-colors cursor-pointer">
+                                        <p className="text-[11px] font-bold text-[#003C61]">{entry.title}</p>
+                                        <p className="text-[10px] text-gray-400">{entry.company || entry.category}</p>
+                                        <p className="text-[10px] text-gray-400">{entry.date || entry.dates}</p>
                                         <span className="text-[10px] text-[#007C77] font-semibold mt-1">View details →</span>
-                                        */}
                                     </div>
-                                </div>
-                            ))}
+                                ))
+                            )}
                         </div>
                     </FrameCard>
 
@@ -234,7 +238,7 @@ export default function Usr_Portfolio() {
                     ‹
                 </button>
             )}
-            
+
             {/* Next arrow */}
             {canvasFrame && nextFrame && (
                 <button onClick={() => goTo(nextFrame)}
@@ -250,7 +254,7 @@ export default function Usr_Portfolio() {
 // Reusable Frame Card component for each section
 function FrameCard({ frame, active, onClick, children }) {
     return (
-        <div onClick={onClick} style={{ position: "absolute", left: frame.x, top: frame.y, width: frame.w, height: frame.h, padding: 28, boxSizing: "border-box", borderRadius: 20, backgroundColor: "#ffffff", boxShadow: active ? "0 0 0 3px #007C77, 0 24px 60px rgba(0,0,0,0.18)" : "0 4px 24px rgba(0,0,0,0.08)", overflow: "hidden", cursor: active ? "default" : "pointer", transition: "box-shadow 0.2s ease"}} 
+        <div onClick={onClick} style={{ position: "absolute", left: frame.x, top: frame.y, width: frame.w, height: frame.h, padding: 28, boxSizing: "border-box", borderRadius: 20, backgroundColor: "#ffffff", boxShadow: active ? "0 0 0 3px #007C77, 0 24px 60px rgba(0,0,0,0.18)" : "0 4px 24px rgba(0,0,0,0.08)", overflow: "hidden", cursor: active ? "default" : "pointer", transition: "box-shadow 0.2s ease"}}
         onMouseEnter={e => { if (!active) e.currentTarget.style.boxShadow = "0 0 0 2.5px #007C77, 0 12px 40px rgba(0,0,0,0.13)"; }} onMouseLeave={e => { if (!active) e.currentTarget.style.boxShadow = "0 4px 24px rgba(0,0,0,0.08)"; }}>
             {children}
         </div>
