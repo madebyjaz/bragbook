@@ -75,6 +75,9 @@ export default function Usr_Portfolio() {
     // firebase fetch for achievement entries (#75)
     const [achievementEntries, setAchievementEntries] = useState([]);
 
+    // tracks which achievement card is expanded to show details (#90)
+    const [expandedAchievement, setExpandedAchievement] = useState(null);
+
     useEffect(() => {
         if (!currentUser) return;
         const q = query(collection(db, "users", currentUser.uid, "achievements"), orderBy("createdAt", "desc"));
@@ -244,7 +247,20 @@ export default function Usr_Portfolio() {
                                         <p className="text-[10px] text-gray-400">
                                             {entry.dateStarted?.month} {entry.dateStarted?.year} — {entry.isPresent ? "Present" : `${entry.dateCompleted?.month} ${entry.dateCompleted?.year}`}
                                         </p>
-                                        <span className="text-[10px] text-[#007C77] font-semibold mt-1">View details →</span>
+                                        {/* toggle description visibility (#90) */}
+                                        <span
+                                            onClick={(e) => { e.stopPropagation(); setExpandedAchievement(expandedAchievement === entry.id ? null : entry.id); }}
+                                            className="text-[10px] text-[#007C77] font-semibold mt-1 cursor-pointer"
+                                        >
+                                            {expandedAchievement === entry.id ? "Hide details ↑" : "View details →"}
+                                        </span>
+                                        {/* expanded description view (#90) */}
+                                        {expandedAchievement === entry.id && (
+                                            <div className="mt-2 pt-2 border-t border-gray-100">
+                                                <p className="text-[10px] font-semibold text-[#003C61] mb-1">Description</p>
+                                                <p className="text-[10px] text-gray-400">{entry.description || "No description provided."}</p>
+                                            </div>
+                                        )}
                                         {/* delete button for achievement entry (#78) */}
                                         <button
                                             onClick={(e) => handleDeleteAchievement(e, entry.id)}
