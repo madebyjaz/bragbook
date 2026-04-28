@@ -146,6 +146,17 @@ export default function Usr_Portfolio() {
             <nav className="bg-white border-b border-gray-200 flex items-center justify-between px-6 z-50 shrink-0 shadow-sm" style={{ height: 52 }}>
                 <span className="text-xl font-bold" style={{ background: "linear-gradient(90deg, #003C61, #007C77, #0d9488)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}> BragBook.cv </span>
                 <div className="flex items-center gap-3">
+                    {/* Share portfolio link button (#77) */}
+                    <button
+                        onClick={() => {
+                            const link = `${window.location.origin}/u/${currentUser.uid}`;
+                            navigator.clipboard.writeText(link);
+                            alert("Portfolio link copied!");
+                        }}
+                        className="text-sm font-semibold text-[#007C77] bg-white border border-[#007C77] hover:bg-[#007C77] hover:text-white px-4 py-1.5 rounded-lg cursor-pointer transition-colors"
+                    >
+                        Share Portfolio
+                    </button>
                     {/* Logout button — signs out of Firebase and redirects to homepage */}
                     <button
                         onClick={handleLogout}
