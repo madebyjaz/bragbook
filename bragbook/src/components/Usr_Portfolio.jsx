@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { db, auth } from "../firebaseConfig";
-import { collection, onSnapshot, orderBy, query, doc, getDoc } from "firebase/firestore";
-import { signOut } from "firebase/auth";
+import { collection, onSnapshot, orderBy, query, doc, getDoc, deleteDoc } from "firebase/firestore";
+import { signOut, onAuthStateChanged } from "firebase/auth";
 
 // frames for each section of the profile
 const FRAMES = [
@@ -28,53 +28,74 @@ export default function Usr_Portfolio() {
     // state to track loading while fetching user data from Firestore
     const [profileLoading, setProfileLoading] = useState(true);
 
+    // state to hold the authenticated user once Firebase Auth is ready
+    const [currentUser, setCurrentUser] = useState(null);
+
     // mock education entries. Moved inside component to fix invalid hook call error
     const [educationEntries, setEducationEntries] = useState([
         { degree: "B.S. Computer Science", school: "Stanford University", location: "Stanford, CA", dates: "Sep 2015 - Jun 2019", desc: "Focused on software engineering and AI." },
         { degree: "M.S. Software Engineering", school: "MIT", location: "Cambridge, MA", dates: "Sep 2019 - Jun 2021", desc: "Specialized in distributed systems." },
     ]);
 
+    // wait for Firebase Auth to initialize before fetching any data
+    useEffect(() => {
+        const unsubscribe = onAuthStateChanged(auth, (user) => {
+            setCurrentUser(user);
+            if (!user) {
+                setProfileLoading(false);
+            }
+        });
+        return () => unsubscribe();
+    }, []);
+
     // fetch the logged-in user's profile data from Firestore
     useEffect(() => {
-        if (!auth.currentUser) return;
+        if (!currentUser) return;
         const fetchProfile = async () => {
-            const docSnap = await getDoc(doc(db, 'users', auth.currentUser.uid));
+            const docSnap = await getDoc(doc(db, 'users', currentUser.uid));
             if (docSnap.exists()) {
                 setUserData(docSnap.data());
             }
             setProfileLoading(false);
         };
         fetchProfile();
-    }, []);
+    }, [currentUser]);
 
     // firebase fetch for education entries. I used ai to help write this useeffect funct bc I could not figure it out.
     useEffect(() => {
-        if (!auth.currentUser) return;
-        const q = query(collection(db, "users", auth.currentUser.uid, "education"), orderBy("createdAt", "desc"));
+        if (!currentUser) return;
+        const q = query(collection(db, "users", currentUser.uid, "education"), orderBy("createdAt", "desc"));
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const entries = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             setEducationEntries(entries);
         });
         return () => unsubscribe();
-    }, []);
+    }, [currentUser]);
 
     // firebase fetch for achievement entries (#75)
     const [achievementEntries, setAchievementEntries] = useState([]);
 
     useEffect(() => {
-        if (!auth.currentUser) return;
-        const q = query(collection(db, "users", auth.currentUser.uid, "achievements"), orderBy("createdAt", "desc"));
+        if (!currentUser) return;
+        const q = query(collection(db, "users", currentUser.uid, "achievements"), orderBy("createdAt", "desc"));
         const unsub = onSnapshot(q, (snapshot) => {
             const entries = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
             setAchievementEntries(entries);
         });
         return () => unsub();
-    }, []);
+    }, [currentUser]);
 
     // This allows user to sign out of Firebase and be redirected to homepage
     const handleLogout = async () => {
         await signOut(auth);
         navigate("/");
+    };
+
+    // deletes an achievement entry from Firestore (#78)
+    const handleDeleteAchievement = async (e, entryId) => {
+        e.stopPropagation();
+        if (!window.confirm("Are you sure you want to delete this achievement?")) return;
+        await deleteDoc(doc(db, "users", currentUser.uid, "achievements", entryId));
     };
 
     // Acts as a handler to navigate to a specific frame
@@ -220,8 +241,17 @@ export default function Usr_Portfolio() {
                                     <div key={entry.id} className="border border-gray-200 rounded-xl p-3 mb-2 flex flex-col gap-1 hover:border-[#007C77] transition-colors cursor-pointer">
                                         <p className="text-[11px] font-bold text-[#003C61]">{entry.title}</p>
                                         <p className="text-[10px] text-gray-400">{entry.company || entry.category}</p>
-                                        <p className="text-[10px] text-gray-400">{entry.date || entry.dates}</p>
+                                        <p className="text-[10px] text-gray-400">
+                                            {entry.dateStarted?.month} {entry.dateStarted?.year} — {entry.isPresent ? "Present" : `${entry.dateCompleted?.month} ${entry.dateCompleted?.year}`}
+                                        </p>
                                         <span className="text-[10px] text-[#007C77] font-semibold mt-1">View details →</span>
+                                        {/* delete button for achievement entry (#78) */}
+                                        <button
+                                            onClick={(e) => handleDeleteAchievement(e, entry.id)}
+                                            className="text-[10px] text-red-400 hover:text-red-600 font-semibold mt-1 bg-transparent border-none cursor-pointer text-left p-0"
+                                        >
+                                            Delete
+                                        </button>
                                     </div>
                                 ))
                             )}
