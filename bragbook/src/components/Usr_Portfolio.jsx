@@ -73,61 +73,22 @@ export default function Usr_Portfolio() {
     }, [currentUser]);
 
     // firebase fetch for achievement entries (#75)
+    const [achievementEntries, setAchievementEntries] = useState([]);
 
-//  const [achievementEntries, setAchievementEntries] = useState([]);
-
-    // with this:
-    const [achievementEntries, setAchievementEntries] = useState([
-        {
-            id: "mock1",
-            title: "Led Frontend Redesign",
-            company: "Tech Solutions Inc.",
-            description: "Redesigned the entire frontend of the company's main product, improving load time by 40% and increasing user engagement by 25%.",
-            dateStarted: { month: "January", year: "2023" },
-            dateCompleted: { month: "June", year: "2023" },
-            isPresent: false,
-            proof: {
-                type: "url",
-                value: "https://github.com/johndoe/frontend-redesign",
-            },
-        },
-        {
-            id: "mock2",
-            title: "Open Source Contribution",
-            company: "GitHub Community",
-            description: "Contributed 3 major features to a popular React component library with 10k+ stars.",
-            dateStarted: { month: "March", year: "2024" },
-            isPresent: true,
-            proof: {
-                type: "file",
-                value: "https://example.com/proof.pdf",
-                fileName: "contribution_certificate.pdf",
-            },
-        },
-        {
-            id: "mock3",
-            title: "AI-Powered Analytics Dashboard",
-            company: "Data Insights Corp",
-            description: "Built an analytics dashboard using Python and React that processed 1M+ data points daily.",
-            dateStarted: { month: "March", year: "2021" },
-            dateCompleted: { month: "August", year: "2021" },
-            isPresent: false,
-            proof: null,   // no proof attached — tests the "no proof" case
-        },
-    ]);
+    
 
     // tracks which achievement card is expanded to show details (#90)
     const [expandedAchievement, setExpandedAchievement] = useState(null);
 
-   // useEffect(() => {
-    //    if (!currentUser) return;
-    //    const q = query(collection(db, "users", currentUser.uid, "achievements"), orderBy("createdAt", "desc"));
-   //     const unsub = onSnapshot(q, (snapshot) => {
-    //        const entries = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-    //        setAchievementEntries(entries);
-   //     });
-   //     return () => unsub();
-   // }, [currentUser]);
+    useEffect(() => {
+        if (!currentUser) return;
+            const q = query(collection(db, "users", currentUser.uid, "achievements"), orderBy("createdAt", "desc"));
+            const unsub = onSnapshot(q, (snapshot) => {
+                const entries = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+                    setAchievementEntries(entries);
+                });
+                return () => unsub();
+            }, [currentUser]);
 
     // This allows user to sign out of Firebase and be redirected to homepage
     const handleLogout = async () => {
@@ -312,18 +273,22 @@ export default function Usr_Portfolio() {
                                             <div className="mt-2 pt-2 border-t border-gray-100">
                                                 <p className="text-[10px] font-semibold text-[#003C61] mb-1">Description</p>
                                                 <p className="text-[10px] text-gray-400">{entry.description || "No description provided."}</p>
-
-                                                {/*Proof attachment */}
-                                                {entry.proof && entry.proof.type && (
-                                                    <div className="border-t border-gray-100 pt-4 mt-4">
-                                                        <p className="text-[10px] font-extrabold text-[#003C61] uppercase tracking-widest mb-3"> 📎 Proof of Achievement </p>
-
-                                                        {entry.proof.type === "none" ? (
-                                                            <div className="border-t border-gray-100 pt-4 mt-4">
-                                                                <p className="text-[10px] font-extrabold text-[#003C61] uppercase tracking-widest mb-3"> 📎 Proof of Achievement </p>
-                                                                <p className="text-[10px] text-gray-400"> The achievement has not been verified. Submit proof to verify your achievement.</p>
-                                                            </div>
-                                                        ) : null}
+                                                {/* Proof attachment */}
+                                                {!entry.proof || entry.proof.type === "none" ? (
+                                                    // no proof attached — show unverified message
+                                                    <div className="border-t border-gray-100 pt-3 mt-3">
+                                                        <p className="text-[10px] font-extrabold text-[#003C61] uppercase tracking-widest mb-1">📎 Proof of Achievement</p>
+                                                        <p className="text-[10px] text-gray-400 mb-2">This achievement has not been verified. Submit proof to verify your achievement.</p>
+                                                        <button
+                                                            onClick={(e) => { e.stopPropagation(); /* navigate(`/achievements/edit/${entry.id}`) */ }}
+                                                            className="text-[10px] font-bold text-white bg-[#007C77] hover:bg-[#005f5b] px-3 py-1.5 rounded-lg border-none cursor-pointer transition-colors">
+                                                            + Add Proof
+                                                        </button>
+                                                    </div>
+                                                ) : (
+                                                    // proof exists — show it
+                                                    <div className="border-t border-gray-100 pt-3 mt-3">
+                                                        <p className="text-[10px] font-extrabold text-[#003C61] uppercase tracking-widest mb-2">📎 Proof of Achievement</p>
 
                                                         {/* URL proof */}
                                                         {entry.proof.type === "url" && (
