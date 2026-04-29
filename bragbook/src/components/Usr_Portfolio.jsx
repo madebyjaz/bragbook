@@ -312,18 +312,22 @@ export default function Usr_Portfolio() {
                                             <div className="mt-2 pt-2 border-t border-gray-100">
                                                 <p className="text-[10px] font-semibold text-[#003C61] mb-1">Description</p>
                                                 <p className="text-[10px] text-gray-400">{entry.description || "No description provided."}</p>
-
-                                                {/*Proof attachment */}
-                                                {entry.proof && entry.proof.type && (
-                                                    <div className="border-t border-gray-100 pt-4 mt-4">
-                                                        <p className="text-[10px] font-extrabold text-[#003C61] uppercase tracking-widest mb-3"> 📎 Proof of Achievement </p>
-
-                                                        {entry.proof.type === "none" ? (
-                                                            <div className="border-t border-gray-100 pt-4 mt-4">
-                                                                <p className="text-[10px] font-extrabold text-[#003C61] uppercase tracking-widest mb-3"> 📎 Proof of Achievement </p>
-                                                                <p className="text-[10px] text-gray-400"> The achievement has not been verified. Submit proof to verify your achievement.</p>
-                                                            </div>
-                                                        ) : null}
+                                                {/* Proof attachment */}
+                                                {!entry.proof || entry.proof.type === "none" ? (
+                                                    // no proof attached — show unverified message
+                                                    <div className="border-t border-gray-100 pt-3 mt-3">
+                                                        <p className="text-[10px] font-extrabold text-[#003C61] uppercase tracking-widest mb-1">📎 Proof of Achievement</p>
+                                                        <p className="text-[10px] text-gray-400 mb-2">This achievement has not been verified. Submit proof to verify your achievement.</p>
+                                                        <button
+                                                            onClick={(e) => { e.stopPropagation(); /* navigate(`/achievements/edit/${entry.id}`) */ }}
+                                                            className="text-[10px] font-bold text-white bg-[#007C77] hover:bg-[#005f5b] px-3 py-1.5 rounded-lg border-none cursor-pointer transition-colors">
+                                                            + Add Proof
+                                                        </button>
+                                                    </div>
+                                                ) : (
+                                                    // proof exists — show it
+                                                    <div className="border-t border-gray-100 pt-3 mt-3">
+                                                        <p className="text-[10px] font-extrabold text-[#003C61] uppercase tracking-widest mb-2">📎 Proof of Achievement</p>
 
                                                         {/* URL proof */}
                                                         {entry.proof.type === "url" && (
