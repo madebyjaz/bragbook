@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { db, auth } from "../../firebaseConfig";
 import { doc, getDoc, updateDoc, serverTimestamp } from "firebase/firestore";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 export default function UpdateAchievement() {
     // entry ID from URL and set up nav
@@ -17,6 +18,28 @@ export default function UpdateAchievement() {
         dateCompleted: { month: "", year: "" },
         isPresent: false,
     });
+    const [proofType, setProofType] = useState("none");
+    const [proofValue, setProofValue] = useState("");
+    const [proofFile, setProofFile] = useState(null);
+
+    if (data.proof) {
+        setProofType(data.proof.type || "none");
+        setProofValue(data.proof.value || "");
+    }
+    let proof = null;
+    if (proofType === "url" && proofValue) {
+        proof = { type: "url", value: proofValue };
+    } else if (proofType === "file" && proofFile) {
+        const storage = getStorage();
+        const storageRef = ref(storage, `users/${auth.currentUser.uid}/achievements/${Date.now()}_${proofFile.name}`);
+        await uploadBytes(storageRef, proofFile);
+        const downloadURL = await getDownloadURL(storageRef);
+        proof = { type: "file", value: downloadURL, fileName: proofFile.name };
+    } else if (proofType === "file" && !proofFile && updateFormData.proof?.type === "file") {
+        // keep existing file if no new one selected
+        proof = updateFormData.proof;
+    }   
+
     // form and notif states
     const [loading, setLoading] = useState(true);
     const [isToggled, setisToggled] = useState(false);
@@ -66,6 +89,7 @@ export default function UpdateAchievement() {
             await updateDoc(doc(db, "users", auth.currentUser.uid, "achievements", entryId), {
                 ...updateFormData,
                 isPresent: isToggled,
+                proof, 
                 updatedAt: serverTimestamp(),
             });
         } catch (error) {

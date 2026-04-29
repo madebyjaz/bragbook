@@ -73,20 +73,61 @@ export default function Usr_Portfolio() {
     }, [currentUser]);
 
     // firebase fetch for achievement entries (#75)
-    const [achievementEntries, setAchievementEntries] = useState([]);
+
+//  const [achievementEntries, setAchievementEntries] = useState([]);
+
+    // with this:
+    const [achievementEntries, setAchievementEntries] = useState([
+        {
+            id: "mock1",
+            title: "Led Frontend Redesign",
+            company: "Tech Solutions Inc.",
+            description: "Redesigned the entire frontend of the company's main product, improving load time by 40% and increasing user engagement by 25%.",
+            dateStarted: { month: "January", year: "2023" },
+            dateCompleted: { month: "June", year: "2023" },
+            isPresent: false,
+            proof: {
+                type: "url",
+                value: "https://github.com/johndoe/frontend-redesign",
+            },
+        },
+        {
+            id: "mock2",
+            title: "Open Source Contribution",
+            company: "GitHub Community",
+            description: "Contributed 3 major features to a popular React component library with 10k+ stars.",
+            dateStarted: { month: "March", year: "2024" },
+            isPresent: true,
+            proof: {
+                type: "file",
+                value: "https://example.com/proof.pdf",
+                fileName: "contribution_certificate.pdf",
+            },
+        },
+        {
+            id: "mock3",
+            title: "AI-Powered Analytics Dashboard",
+            company: "Data Insights Corp",
+            description: "Built an analytics dashboard using Python and React that processed 1M+ data points daily.",
+            dateStarted: { month: "March", year: "2021" },
+            dateCompleted: { month: "August", year: "2021" },
+            isPresent: false,
+            proof: null,   // no proof attached — tests the "no proof" case
+        },
+    ]);
 
     // tracks which achievement card is expanded to show details (#90)
     const [expandedAchievement, setExpandedAchievement] = useState(null);
 
-    useEffect(() => {
-        if (!currentUser) return;
-        const q = query(collection(db, "users", currentUser.uid, "achievements"), orderBy("createdAt", "desc"));
-        const unsub = onSnapshot(q, (snapshot) => {
-            const entries = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-            setAchievementEntries(entries);
-        });
-        return () => unsub();
-    }, [currentUser]);
+   // useEffect(() => {
+    //    if (!currentUser) return;
+    //    const q = query(collection(db, "users", currentUser.uid, "achievements"), orderBy("createdAt", "desc"));
+   //     const unsub = onSnapshot(q, (snapshot) => {
+    //        const entries = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+    //        setAchievementEntries(entries);
+   //     });
+   //     return () => unsub();
+   // }, [currentUser]);
 
     // This allows user to sign out of Firebase and be redirected to homepage
     const handleLogout = async () => {
@@ -246,8 +287,9 @@ export default function Usr_Portfolio() {
                             <p className="text-sm font-extrabold text-[#003C61]"> Achievements</p>
                             <button /* onClick={(e) => {e.stopPropagation(); navigate("/achievements/create")}} */ className="bg-[#007C77] hover:bg-[#005f5b] text-white text-[10px] font-bold px-3 py-1.5 rounded-lg transition-colors border-none cursor-pointer"> + Add New Entry</button>
                         </div>
-                        {/* achievement entries fetched from Firestore (#75) — replaces old hardcoded data */}
-                        <div>
+                        {/* achievement entries fetched from Firestore (#75) — replaces old hardcoded data*/}
+                        <div style={{overflowY: "auto", maxHeight: "300px"}} onClick={(e) => e.stopPropagation()}>
+                            {/* Fix (Issue #75): Scrollable container for the achievements (if more than 2 entries are present, entries were not visible)*/}
                             {achievementEntries.length === 0 ? (
                                 <p className="text-xs text-gray-300 mt-4 text-center">No achievements yet. Click "+ Add New Entry" to get started!</p>
                             ) : (
@@ -270,6 +312,46 @@ export default function Usr_Portfolio() {
                                             <div className="mt-2 pt-2 border-t border-gray-100">
                                                 <p className="text-[10px] font-semibold text-[#003C61] mb-1">Description</p>
                                                 <p className="text-[10px] text-gray-400">{entry.description || "No description provided."}</p>
+
+                                                {/*Proof attachment */}
+                                                {entry.proof && entry.proof.type && (
+                                                    <div className="border-t border-gray-100 pt-4 mt-4">
+                                                        <p className="text-[10px] font-extrabold text-[#003C61] uppercase tracking-widest mb-3"> 📎 Proof of Achievement </p>
+
+                                                        {entry.proof.type === "none" ? (
+                                                            <div className="border-t border-gray-100 pt-4 mt-4">
+                                                                <p className="text-[10px] font-extrabold text-[#003C61] uppercase tracking-widest mb-3"> 📎 Proof of Achievement </p>
+                                                                <p className="text-[10px] text-gray-400"> The achievement has not been verified. Submit proof to verify your achievement.</p>
+                                                            </div>
+                                                        ) : null}
+
+                                                        {/* URL proof */}
+                                                        {entry.proof.type === "url" && (
+                                                            <a href={entry.proof.value} target="_blank" rel="noopener noreferrer"
+                                                                className="flex items-center gap-2 border border-gray-200 rounded-xl p-3 hover:border-[#007C77] transition-colors no-underline">
+                                                                <div className="w-8 h-8 rounded-lg flex items-center justify-center text-[#007C77] shrink-0"
+                                                                    style={{ background: "rgba(0,124,119,0.08)" }}>🔗</div>
+                                                                <div>
+                                                                    <p className="text-xs font-bold text-[#003C61]">View Proof</p>
+                                                                    <p className="text-[10px] text-gray-400 truncate">{entry.proof.value}</p>
+                                                                </div>
+                                                            </a>
+                                                        )}
+
+                                                        {/* File proof */}
+                                                        {entry.proof.type === "file" && (
+                                                            <a href={entry.proof.value} target="_blank" rel="noopener noreferrer"
+                                                                className="flex items-center gap-2 border border-gray-200 rounded-xl p-3 hover:border-[#007C77] transition-colors no-underline">
+                                                                <div className="w-8 h-8 rounded-lg flex items-center justify-center text-[#007C77] shrink-0"
+                                                                    style={{ background: "rgba(0,124,119,0.08)" }}>📄</div>
+                                                                <div>
+                                                                    <p className="text-xs font-bold text-[#003C61]">{entry.proof.fileName || "View File"}</p>
+                                                                    <p className="text-[10px] text-[#007C77] font-semibold">Click to download →</p>
+                                                                </div>
+                                                            </a>
+                                                        )}
+                                                    </div>
+                                                )}
                                             </div>
                                         )}
                                         {/* delete button for achievement entry (#78) */}
