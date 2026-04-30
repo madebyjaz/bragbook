@@ -1,7 +1,7 @@
-import { useState } from 'react'
-import ZoomWrapper from './ZoomWrapper'
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from 'react-router-dom'
-import { useEffect, useRef } from "react";
+import { onAuthStateChanged } from 'firebase/auth'
+import { auth } from '../firebaseConfig'
 
 import { auth } from "../firebaseConfig";
 import { signOut, onAuthStateChanged } from "firebase/auth";
@@ -71,20 +71,19 @@ export default function Hero() {
   // useNavigate hook for programmatic navigation to other pages
   const navigate = useNavigate()
 
-  // state to hold the authenticated user once Firebase Auth is ready
-  const [currentUser, setCurrentUser] = useState(null);
+  // Tracks whether a user is currently logged in (#81)
+  // null while checking, true if logged in, false if logged out
+  const [isLoggedIn, setIsLoggedIn] = useState(null)
 
-  const [loginCondition, setLoginCondition] = useState(false)
-
+  // Listens to Firebase auth state changes and updates login status (#81)
+  // This runs once on mount and subscribes to future auth changes
   useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, (user) => {
-            setCurrentUser(user);
-            if (user) {
-                setLoginCondition(true)
-            }
-        });
-        return () => unsubscribe();
-    }, []);
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setIsLoggedIn(!!user)
+    })
+    // Cleanup the subscription when component unmounts
+    return () => unsubscribe()
+  }, [])
 
   const sceneRef  = useRef(null);
   const glow1Ref  = useRef(null);
@@ -321,40 +320,52 @@ export default function Hero() {
           Transform your professional story into an immersive portfolio experience
         </p>
 
-        {/* Buttons */}
-        { !loginCondition && <div
+        {/* Buttons — show different options based on login state (#81) */}
+        <div
           className="fu4"
           style={{ display: "flex", gap: 16, alignItems: "center" }}
         >
-          {/* Get Started — navigates to signup page #51 */}
-          <button
-            onClick={() => navigate('/signup')}
-            className='px-6 py-2 bg-white text-purple-900 rounded-full font-semibold'
-          >
-            Get Started
-          </button>
+          {isLoggedIn ? (
+            // Logged in: show a single button to go straight to their portfolio
+            <button
+              onClick={() => navigate('/portfolio')}
+              className='px-6 py-2 bg-white text-purple-900 rounded-full font-semibold'
+            >
+              Go to my portfolio
+            </button>
+          ) : (
+            // Logged out: show Get Started and Log In buttons
+            <>
+              {/* Get Started — navigates to signup page #51 */}
+              <button
+                onClick={() => navigate('/signup')}
+                className='px-6 py-2 bg-white text-purple-900 rounded-full font-semibold'
+              >
+                Get Started
+              </button>
 
-          {/* Log In — navigates to login page #52 */}
-          <button
-            onClick={() => navigate('/login')}
-            className='px-6 py-2 border border-white text-white rounded-full font-semibold'
-          >
-            Log In
-          </button>
-        </div> }
-        { loginCondition && <div
-          className="fu4"
-          style={{ display: "flex", gap: 16, alignItems: "center" }}
-        >
-          {/* Go to profile */}
-          <button
-            onClick={() => navigate('/portfolio')}
-            className='px-6 py-2 bg-white text-purple-900 rounded-full font-semibold'
-          >
-            Go to My Profile
-          </button>
-        </div> }
+              {/* Log In — navigates to login page #52 */}
+              <button
+                onClick={() => navigate('/login')}
+                className='px-6 py-2 border border-white text-white rounded-full font-semibold'
+              >
+                Log In
+              </button>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
