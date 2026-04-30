@@ -3,8 +3,6 @@ import { useNavigate } from 'react-router-dom'
 import { onAuthStateChanged } from 'firebase/auth'
 import { auth } from '../firebaseConfig'
 
-import { auth } from "../firebaseConfig";
-import { signOut, onAuthStateChanged } from "firebase/auth";
 
 const styles = `
   @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700;800&display=swap');
