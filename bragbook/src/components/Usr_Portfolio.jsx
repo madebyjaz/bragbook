@@ -142,6 +142,27 @@ export default function Usr_Portfolio() {
         </div>
     );
 
+    // reusable avatar component
+    const Avatar = ({ size = "lg" }) => {
+        const sizeClass = size === "lg"
+            ? "w-20 h-20 text-3xl border-4"
+            : "w-14 h-14 text-xl border-2";
+        const initials = userData?.name?.split(' ').map(n => n[0]).join('').toUpperCase() || '?';
+
+        return userData?.photoURL ? (
+            <img
+                src={userData.photoURL}
+                alt="Profile"
+                className={`${sizeClass} rounded-full object-cover border-white shadow-lg`}
+            />
+        ) : (
+            <div className={`${sizeClass} rounded-full flex items-center justify-center text-white font-extrabold border-white shadow-lg`}
+                style={{ background: "linear-gradient(135deg, #007C77, #0d9488)" }}>
+                {initials}
+            </div>
+        );
+    };
+
     return (
         <div className="fixed inset-0 flex flex-col overflow-hidden" style={{background: "#f0f4f8"}}>
             {/* Nav Bar */}
@@ -182,11 +203,7 @@ export default function Usr_Portfolio() {
                         <div className="absolute top-0 left-0 right-0 h-16 rounded-t-2xl"
                             style={{ background: "linear-gradient(135deg, #007C77, #0d9488, #003C61)" }} />
                         <div className="flex flex-col items-center" style={{ marginTop: 40 }}>
-                            <div className="w-20 h-20 rounded-full flex items-center justify-center text-white text-3xl font-extrabold border-4 border-white shadow-lg"
-                                style={{ background: "linear-gradient(135deg, #007C77, #0d9488)" }}>
-                                {/* compute initials from real user name from Firestore (#73) */}
-                                {userData?.name?.split(' ').map(n => n[0]).join('').toUpperCase() || '?'}
-                            </div>
+                            <Avatar size="lg" />
                             <p className="text-xl font-extrabold text-[#003C61] mt-3">{userData?.name || 'Your Name'}</p>
                             <p className="text-xs text-gray-400 text-center mt-1 leading-snug px-4">{userData?.tagline || 'Add a tagline in Edit Profile'}</p>
                             <p className="text-[10px] text-gray-300 mt-1">📍 {userData?.location || ''}</p>
