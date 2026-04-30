@@ -2,7 +2,7 @@ import { useState } from 'react'
 import ZoomWrapper from './ZoomWrapper'
 import { useNavigate } from 'react-router-dom'
 import { useEffect, useRef } from "react";
-import PreviewCard from './Usr_preview_card';
+
 const styles = `
   @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700;800&display=swap');
 
@@ -350,6 +350,15 @@ export default function Hero() {
             Log In
           </button>
         </div>
+
+        {/* Discover — navigates to discover page */}
+        <button
+          onClick={() => navigate('/discover')}
+          style={{ color: "rgba(255,255,255,0.6)", fontSize: 13, fontWeight: 500, marginTop: 18, letterSpacing: "0.05em" }}
+          className='bg-transparent border-none cursor-pointer hover:text-white transition-colors'
+        >
+          ✦ Explore User Portfolios →
+        </button>
       </div>
 
       {/* spacer with fade at bottom */}
@@ -359,36 +368,6 @@ export default function Hero() {
           zIndex: 0,
           background: "linear-gradient(to bottom, transparent 70%, #0c3040 100%)"
       }} />
-
-      {/* discover content */}
-      <div style={{ 
-          position: "relative", 
-          zIndex: 20,
-          paddingTop: 80,
-          paddingBottom: 80,
-          background: "#0c3040"
-      }}>
-
-
-      <div style={{ maxWidth: 1100, margin: "0 auto", padding: "0 24px" }}>
-
-              <div style={{ marginBottom: 32 }}>
-                  <h2 style={{ fontSize: 28, fontWeight: 800, color: "#fff", margin: 0 }}>Discover</h2>
-                  <p style={{ fontSize: 14, color: "rgba(255,255,255,0.55)", marginTop: 6 }}>
-                      Explore other people's proudest accomplishments and get inspired to showcase your own.
-                  </p>
-              </div>
-
-              {loading ? (
-                  <p style={{ color: "rgba(255,255,255,0.4)", textAlign: "center" }}> Loading User Profiles...</p>
-              ) : users.length === 0 ? (
-                  <p style={{ color: "rgba(255,255,255,0.4)", textAlign: "center" }}> No profiles to show yet. Get started by making yours today.</p>
-              ) : (
-                  <PreviewCard users={users} />
-              )}
-
-          </div>
-      </div>
 
     </div> 
   );
