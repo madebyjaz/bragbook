@@ -3,7 +3,9 @@ import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
 import { getFirestore } from "firebase/firestore";
 // Initialize and retrieve the Firebase Auth service instance 
-import { getAuth } from 'firebase/auth'
+// import { getAuth } from 'firebase/auth'
+import { getAuth, setPersistence, browserSessionPersistence } from "firebase/auth";
+
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
 
@@ -25,4 +27,6 @@ const analytics = getAnalytics(app);
 export const db = getFirestore(app);
 
 // Export auth instance for use in login and signup components
-export const auth = getAuth(app)
+const auth = getAuth(app)
+setPersistence(auth, browserSessionPersistence)
+export { auth }

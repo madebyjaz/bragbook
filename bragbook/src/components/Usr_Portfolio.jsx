@@ -43,6 +43,8 @@ export default function Usr_Portfolio() {
             setCurrentUser(user);
             if (!user) {
                 setProfileLoading(false);
+                //in the case the user is not logged in, immediately redirects to the login page
+                navigate('/login')
             }
         });
         return () => unsubscribe();
