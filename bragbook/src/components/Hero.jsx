@@ -65,9 +65,13 @@ const styles = `
   }
 `;
 
+
 export default function Hero() {
   // useNavigate hook for programmatic navigation to other pages
   const navigate = useNavigate()
+
+  // State for user profiles (for the Discover section)
+  const [loading, setLoading] = useState(false);
 
   // Tracks whether a user is currently logged in (#81)
   // null while checking, true if logged in, false if logged out
@@ -141,8 +145,9 @@ export default function Hero() {
       style={{
         position: "relative",
         width: "100vw",
-        height: "100vh",
-        overflow: "hidden",
+        minHeight: "100vh",      // was height: 100vh
+        overflowX: "hidden",     //overflow: "hidden",
+        overflowY: "auto",
         fontFamily: "'Sora', sans-serif",
         color: "#fff",
         userSelect: "none",
@@ -352,8 +357,26 @@ export default function Hero() {
             </>
           )}
         </div>
+
+        {/* Discover — navigates to discover page */}
+        <button
+          onClick={() => navigate('/discover')}
+          style={{ color: "rgba(255,255,255,0.6)", fontSize: 13, fontWeight: 500, marginTop: 18, letterSpacing: "0.05em" }}
+          className='bg-transparent border-none cursor-pointer hover:text-white transition-colors'
+        >
+          ✦ Explore User Portfolios →
+        </button>
       </div>
-    </div>
+
+      {/* spacer with fade at bottom */}
+      <div style={{ 
+          height: "100vh", 
+          position: "relative", 
+          zIndex: 0,
+          background: "linear-gradient(to bottom, transparent 70%, #0c3040 100%)"
+      }} />
+
+    </div> 
   );
 }
 
