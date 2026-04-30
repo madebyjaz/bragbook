@@ -1,13 +1,22 @@
 // App.jsx
 // Root component of the Bragbook app.
 // Sets up React Router with base routes.
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom'
 import Hero from './components/Hero'
 import HomePageCanvas from './components/HomePageCanvas'
 import SignupPage from './components/SignupPage'
 import LoginPage from './components/LoginPage'
 import Usr_Portfolio from './components/Usr_Portfolio'
 import PublicPortfolio from './components/PublicPortfolio'
+
+// import ProtectedRoutes from './ProtectedRoutes'
+
+const AuthenticatedRoute = () => {
+    if (!auth) {
+        //redirect to this route after login
+        return navigate('/login')
+      }
+};
 
 const App = () => {
   return (

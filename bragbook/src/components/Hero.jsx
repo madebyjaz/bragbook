@@ -3,6 +3,9 @@ import ZoomWrapper from './ZoomWrapper'
 import { useNavigate } from 'react-router-dom'
 import { useEffect, useRef } from "react";
 
+import { auth } from "../firebaseConfig";
+import { signOut, onAuthStateChanged } from "firebase/auth";
+
 const styles = `
   @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700;800&display=swap');
 
@@ -68,6 +71,20 @@ export default function Hero() {
   // useNavigate hook for programmatic navigation to other pages
   const navigate = useNavigate()
 
+  // state to hold the authenticated user once Firebase Auth is ready
+  const [currentUser, setCurrentUser] = useState(null);
+
+  const [loginCondition, setLoginCondition] = useState(false)
+
+  useEffect(() => {
+        const unsubscribe = onAuthStateChanged(auth, (user) => {
+            setCurrentUser(user);
+            if (user) {
+                setLoginCondition(true)
+            }
+        });
+        return () => unsubscribe();
+    }, []);
 
   const sceneRef  = useRef(null);
   const glow1Ref  = useRef(null);
@@ -305,7 +322,7 @@ export default function Hero() {
         </p>
 
         {/* Buttons */}
-        <div
+        { !loginCondition && <div
           className="fu4"
           style={{ display: "flex", gap: 16, alignItems: "center" }}
         >
@@ -324,7 +341,19 @@ export default function Hero() {
           >
             Log In
           </button>
-        </div>
+        </div> }
+        { loginCondition && <div
+          className="fu4"
+          style={{ display: "flex", gap: 16, alignItems: "center" }}
+        >
+          {/* Go to profile */}
+          <button
+            onClick={() => navigate('/portfolio')}
+            className='px-6 py-2 bg-white text-purple-900 rounded-full font-semibold'
+          >
+            Go to My Profile
+          </button>
+        </div> }
       </div>
     </div>
   );
