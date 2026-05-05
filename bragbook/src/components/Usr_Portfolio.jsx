@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { db, auth } from "../firebaseConfig";
 import { collection, onSnapshot, orderBy, query, doc, getDoc, deleteDoc } from "firebase/firestore";
@@ -31,11 +31,8 @@ export default function Usr_Portfolio() {
     // state to hold the authenticated user once Firebase Auth is ready
     const [currentUser, setCurrentUser] = useState(null);
 
-    // mock education entries. Moved inside component to fix invalid hook call error
-    const [educationEntries, setEducationEntries] = useState([
-        { degree: "B.S. Computer Science", school: "Stanford University", location: "Stanford, CA", dates: "Sep 2015 - Jun 2019", desc: "Focused on software engineering and AI." },
-        { degree: "M.S. Software Engineering", school: "MIT", location: "Cambridge, MA", dates: "Sep 2019 - Jun 2021", desc: "Specialized in distributed systems." },
-    ]);
+    // education entries from Firestore
+    const [educationEntries, setEducationEntries] = useState([]);
 
     // wait for Firebase Auth to initialize before fetching any data
     useEffect(() => {
@@ -43,8 +40,7 @@ export default function Usr_Portfolio() {
             setCurrentUser(user);
             if (!user) {
                 setProfileLoading(false);
-                //in the case the user is not logged in, immediately redirects to the login page
-                navigate('/login')
+                navigate('/login');
             }
         });
         return () => unsubscribe();
@@ -63,12 +59,15 @@ export default function Usr_Portfolio() {
         fetchProfile();
     }, [currentUser]);
 
-    // firebase fetch for education entries. I used ai to help write this useeffect funct bc I could not figure it out.
+    // firebase fetch for education entries
     useEffect(() => {
         if (!currentUser) return;
         const q = query(collection(db, "users", currentUser.uid, "education"), orderBy("createdAt", "desc"));
         const unsubscribe = onSnapshot(q, (snapshot) => {
-            const entries = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            const entries = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            }));
             setEducationEntries(entries);
         });
         return () => unsubscribe();
@@ -77,20 +76,18 @@ export default function Usr_Portfolio() {
     // firebase fetch for achievement entries (#75)
     const [achievementEntries, setAchievementEntries] = useState([]);
 
-    
-
     // tracks which achievement card is expanded to show details (#90)
     const [expandedAchievement, setExpandedAchievement] = useState(null);
 
     useEffect(() => {
         if (!currentUser) return;
-            const q = query(collection(db, "users", currentUser.uid, "achievements"), orderBy("createdAt", "desc"));
-            const unsub = onSnapshot(q, (snapshot) => {
-                const entries = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-                    setAchievementEntries(entries);
-                });
-                return () => unsub();
-            }, [currentUser]);
+        const q = query(collection(db, "users", currentUser.uid, "achievements"), orderBy("createdAt", "desc"));
+        const unsub = onSnapshot(q, (snapshot) => {
+            const entries = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+            setAchievementEntries(entries);
+        });
+        return () => unsub();
+    }, [currentUser]);
 
     // This allows user to sign out of Firebase and be redirected to homepage
     const handleLogout = async () => {
@@ -107,7 +104,6 @@ export default function Usr_Portfolio() {
 
     // Acts as a handler to navigate to a specific frame
     const goTo = (frame) => setCanvasFrame(frame);
-    // const goOverview = () => setCanvasFrame(null);
 
     const currentIdx = FRAMES.findIndex(f => f.id === canvasFrame?.id);
     const prevFrame  = currentIdx > 0 ? FRAMES[currentIdx - 1] : null;
@@ -137,14 +133,14 @@ export default function Usr_Portfolio() {
         return `scale(${scale}) translate(${tx}px, ${ty}px)`;
     };
 
-    // shows a  loading indicator while fetching profile data from Firebase
+    // shows a loading indicator while fetching profile data from Firebase
     if (profileLoading) return (
         <div className="fixed inset-0 flex items-center justify-center bg-[#f0f4f8]">
             <p className="text-[#007C77] font-semibold text-sm">Loading your portfolio...</p>
         </div>
     );
 
-    // reusable avatar component
+    // reusable avatar component — supports profile photo upload (#110)
     const Avatar = ({ size = "lg" }) => {
         const sizeClass = size === "lg"
             ? "w-20 h-20 text-3xl border-4"
@@ -171,6 +167,17 @@ export default function Usr_Portfolio() {
             <nav className="bg-white border-b border-gray-200 flex items-center justify-between px-6 z-50 shrink-0 shadow-sm" style={{ height: 52 }}>
                 <span className="text-xl font-bold" style={{ background: "linear-gradient(90deg, #003C61, #007C77, #0d9488)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}> BragBook.cv </span>
                 <div className="flex items-center gap-3">
+                    {/* dropdown for add/edit actions (Bret's PR #112) */}
+                    <div className="relative group">
+                        <button className="text-sm font-semibold text-white bg-[#003C61] px-4 py-1.5 rounded-lg">
+                            + Add / Edit
+                        </button>
+                        <div className="absolute right-0 mt-2 w-44 bg-white border border-gray-200 rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50">
+                            <button onClick={() => navigate("/profile/edit")} className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100">Edit Profile</button>
+                            <button onClick={() => navigate("/education/create")} className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100">Add Education</button>
+                            <button onClick={() => navigate("/achievements/create")} className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100">Add Achievement</button>
+                        </div>
+                    </div>
                     {/* Share portfolio link button (#77) */}
                     <button
                         onClick={() => {
@@ -218,7 +225,7 @@ export default function Usr_Portfolio() {
                                 <div className="flex-1 pb-1">
                                     <p className="text-[10px] text-gray-300 mt-1">📍 {userData?.location || ''} · ✉️ {userData?.email || ''}</p>
                                 </div>
-                                <button /* onClick={(e) => { e.stopPropagation(); navigate("/profile/edit")}} */ className="self-start bg-gray-100 hover:bg-gray-200 text-[#003C61] text-[10px] font-semibold px-3 py-1.5 rounded-lg transition-colors border-none cursor-pointer"> Edit Profile </button>
+                                <button onClick={(e) => { e.stopPropagation(); navigate("/profile/edit")}} className="self-start bg-gray-100 hover:bg-gray-200 text-[#003C61] text-[10px] font-semibold px-3 py-1.5 rounded-lg transition-colors border-none cursor-pointer"> Edit Profile </button>
                             </div>
                             <p className="text-[11px] text-gray-400 mt-4 mb-3">{userData?.bio || 'Add a bio in Edit Profile'}</p>
                             <p className="text-xs font-extrabold text-[#003C61] mb-2">Connect</p>
@@ -244,13 +251,13 @@ export default function Usr_Portfolio() {
                     <FrameCard frame={FRAMES[2]} active={canvasFrame?.id === "education"} onClick={() => goTo(FRAMES[2])}>
                         <div className="flex justify-between items-center mb-3">
                             <p className="text-sm font-extrabold text-[#003C61]"> Education</p>
-                            <button /* onClick={(e) => {e.stopPropagation(); navigate("/education/create")}} */ className="bg-[#007C77] hover:bg-[#005f5b] text-white text-[10px] font-bold px-3 py-1.5 rounded-lg transition-colors border-none cursor-pointer"> + New Education </button>
+                            <button onClick={(e) => {e.stopPropagation(); navigate("/education/create")}} className="bg-[#007C77] hover:bg-[#005f5b] text-white text-[10px] font-bold px-3 py-1.5 rounded-lg transition-colors border-none cursor-pointer"> + New Education </button>
                         </div>
                         {educationEntries.length === 0 ? (
                             <p className="text-xs text-gray-300 mt-4 text-center">No education entries yet. Click "Add Education" to get started!</p>
                         ) : (
                             educationEntries.map((edu, i) => (
-                                <div key={i} /* onClick={(e) => { e.stopPropagation(); navigate(`/education/view/${edu.id}`) }} */ className="flex gap-3 p-3 mb-2 border border-gray-100 rounded-xl hover:border-[#007C77]/40 transition-colors">
+                                <div key={i} onClick={(e) => { e.stopPropagation(); navigate(`/education/view/${edu.id}`) }} className="flex gap-3 p-3 mb-2 border border-gray-100 rounded-xl hover:border-[#007C77]/40 transition-colors">
                                     <div>
                                         <p className="text-sm font-semibold text-[#003C61]">{edu.degree}</p>
                                         <p className="text-[10px] text-gray-400">{edu.school} | {edu.location}</p>
@@ -265,11 +272,10 @@ export default function Usr_Portfolio() {
                     <FrameCard frame={FRAMES[3]} active={canvasFrame?.id === "achievements"} onClick={() => goTo(FRAMES[3])}>
                         <div className="flex justify-between items-center mb-3">
                             <p className="text-sm font-extrabold text-[#003C61]"> Achievements</p>
-                            <button /* onClick={(e) => {e.stopPropagation(); navigate("/achievements/create")}} */ className="bg-[#007C77] hover:bg-[#005f5b] text-white text-[10px] font-bold px-3 py-1.5 rounded-lg transition-colors border-none cursor-pointer"> + Add New Entry</button>
+                            <button onClick={(e) => {e.stopPropagation(); navigate("/achievements/create")}} className="bg-[#007C77] hover:bg-[#005f5b] text-white text-[10px] font-bold px-3 py-1.5 rounded-lg transition-colors border-none cursor-pointer"> + Add New Entry</button>
                         </div>
-                        {/* achievement entries fetched from Firestore (#75) — replaces old hardcoded data*/}
+                        {/* achievement entries fetched from Firestore (#75) — replaces old hardcoded data */}
                         <div style={{overflowY: "auto", maxHeight: "300px"}} onClick={(e) => e.stopPropagation()}>
-                            {/* Fix (Issue #75): Scrollable container for the achievements (if more than 2 entries are present, entries were not visible)*/}
                             {achievementEntries.length === 0 ? (
                                 <p className="text-xs text-gray-300 mt-4 text-center">No achievements yet. Click "+ Add New Entry" to get started!</p>
                             ) : (
@@ -294,22 +300,18 @@ export default function Usr_Portfolio() {
                                                 <p className="text-[10px] text-gray-400">{entry.description || "No description provided."}</p>
                                                 {/* Proof attachment */}
                                                 {!entry.proof || entry.proof.type === "none" ? (
-                                                    // no proof attached — show unverified message
                                                     <div className="border-t border-gray-100 pt-3 mt-3">
                                                         <p className="text-[10px] font-extrabold text-[#003C61] uppercase tracking-widest mb-1">📎 Proof of Achievement</p>
                                                         <p className="text-[10px] text-gray-400 mb-2">This achievement has not been verified. Submit proof to verify your achievement.</p>
                                                         <button
-                                                            onClick={(e) => { e.stopPropagation(); /* navigate(`/achievements/edit/${entry.id}`) */ }}
+                                                            onClick={(e) => { e.stopPropagation(); }}
                                                             className="text-[10px] font-bold text-white bg-[#007C77] hover:bg-[#005f5b] px-3 py-1.5 rounded-lg border-none cursor-pointer transition-colors">
                                                             + Add Proof
                                                         </button>
                                                     </div>
                                                 ) : (
-                                                    // proof exists — show it
                                                     <div className="border-t border-gray-100 pt-3 mt-3">
                                                         <p className="text-[10px] font-extrabold text-[#003C61] uppercase tracking-widest mb-2">📎 Proof of Achievement</p>
-
-                                                        {/* URL proof */}
                                                         {entry.proof.type === "url" && (
                                                             <a href={entry.proof.value} target="_blank" rel="noopener noreferrer"
                                                                 className="flex items-center gap-2 border border-gray-200 rounded-xl p-3 hover:border-[#007C77] transition-colors no-underline">
@@ -321,8 +323,6 @@ export default function Usr_Portfolio() {
                                                                 </div>
                                                             </a>
                                                         )}
-
-                                                        {/* File proof */}
                                                         {entry.proof.type === "file" && (
                                                             <a href={entry.proof.value} target="_blank" rel="noopener noreferrer"
                                                                 className="flex items-center gap-2 border border-gray-200 rounded-xl p-3 hover:border-[#007C77] transition-colors no-underline">

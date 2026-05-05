@@ -4,35 +4,19 @@ import { db, auth } from "../../firebaseConfig";
 import { doc, getDoc, updateDoc, serverTimestamp } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 
-// Mock profile data (will replace w/ the Firebase fetch)
-const mockProfile = {
-    name: "",
-    tagline: "",
-    location: "",
-    email: "",
-    bio: "",
-    photoURL: "",
-    socials: {
-        linkedin: "",
-        github: "",
-        twitter: "",
-        portfolio: "",
-        other: "",
-    },
-};
-
-export default function edit_profile() {
+export default function EditProfile() {
     const navigate = useNavigate();
 
-    // form and notif states 
-    const [formData, setFormData] = useState(mockProfile);
+    // form and notif states
+    const [formData, setFormData] = useState(null);
+    const [loading, setLoading] = useState(true);
     const [showNotification, setShowNotification] = useState(false);
 
     // photo upload states
     const [photoFile, setPhotoFile] = useState(null);
     const [photoPreview, setPhotoPreview] = useState(null);
 
-    // Firebase fetch 
+    // Firebase fetch
     useEffect(() => {
         if (!auth.currentUser) return;
         const fetchProfile = async () => {
@@ -40,14 +24,14 @@ export default function edit_profile() {
             if (docSnap.exists()) {
                 const data = docSnap.data();
                 setFormData(data);
-                // preload existing photo if there is one
                 if (data.photoURL) setPhotoPreview(data.photoURL);
             }
+            setLoading(false);
         };
         fetchProfile();
     }, []);
 
-    // handler for changing inputs 
+    // handler for changing inputs
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         if (name.startsWith("socials.")) {
@@ -106,7 +90,7 @@ export default function edit_profile() {
             }
         }
 
-        // Firebase update 
+        // Firebase update
         try {
             await updateDoc(doc(db, "users", auth.currentUser.uid), {
                 ...formData,
@@ -128,6 +112,9 @@ export default function edit_profile() {
 
     // shared input classes for styling
     const inputClass = "w-full px-4 py-3 border border-gray-200 rounded-xl text-sm text-gray-900 bg-white outline-none focus:border-[#007C77] focus:ring-2 focus:ring-[#007C77]/20 transition-all";
+
+    if (loading) return <p>Loading...</p>;
+    if (!formData) return <p>No profile found</p>;
 
     return (
         <div className="min-h-screen bg-[#1a1a2e] flex items-start justify-center py-10 px-4">
@@ -181,14 +168,14 @@ export default function edit_profile() {
                             placeholder="e.g. Jane Doe" required className={inputClass} />
                     </div>
 
-                    {/* Tagline  */}
+                    {/* Tagline */}
                     <div className="flex flex-col gap-1">
                         <label className="text-sm font-semibold text-[#003C61]">Tagline / Title</label>
                         <input type="text" name="tagline" value={formData.tagline} onChange={handleInputChange}
                             placeholder="e.g. Full-Stack Developer | Open Source Contributor" className={inputClass} />
                     </div>
 
-                    {/* Location  */}
+                    {/* Location */}
                     <div className="flex flex-col gap-1">
                         <label className="text-sm font-semibold text-[#003C61]">Location</label>
                         <input type="text" name="location" value={formData.location} onChange={handleInputChange}

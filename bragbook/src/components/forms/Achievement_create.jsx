@@ -1,11 +1,11 @@
 import { useState } from "react";
-import { motion } from "motion/react";
 import { useNavigate } from "react-router-dom";
-import { db, auth } from "../../firebase/firebase";
+import { db, auth } from "../../firebaseConfig";
+import { motion, AnimatePresence } from "framer-motion";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import {getStorage, ref, uploadBytes, getDownloadURL} from "firebase/storage";
 
-export default function create_achievement_entry_form() {
+export default function CreateAchievement() {
 
     // form state and nav
     const navigate = useNavigate();

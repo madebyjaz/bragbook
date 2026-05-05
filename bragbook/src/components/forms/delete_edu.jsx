@@ -3,24 +3,42 @@ import { useNavigate, useParams } from "react-router-dom";
 import { db, auth } from "../../firebaseConfig";
 import { doc, deleteDoc } from "firebase/firestore";
 
-const mockEduEntry = {
-    degree: "B.S. Computer Science",
-    school: " University of Memphis",
-    location: "Memphis, TN",
-    dates: "Sep 2015 - Jun 2019",
-    desc: "General Concentration. Graduated with honors. Related coursework: Data Structures, Algorithms, Software Engineering, Databases.",
-};
-
-export default function delete_edu() {
+export default function DeleteEdu() {
 
     // entry ID from URL and set up nav
     const { entryId } = useParams();
     const navigate = useNavigate();
 
     // Local state for entry data, notification, and delete button loading state
-    const [entry] = useState(mockEduEntry);
+    const [entry, setEntry] = useState(null);
+    const [loading, setLoading] = useState(true);
     const [showNotif, setshowNotif] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
+
+    useEffect(() => {
+        if (!auth.currentUser) return;
+
+        const fetchEntry = async () => {
+            try {
+                const docSnap = await getDoc(
+                    doc(db, "users", auth.currentUser.uid, "education", entryId)
+                );
+
+                if (docSnap.exists()) {
+                    setEntry(docSnap.data());
+                } else {
+                    setEntry(null);
+                }
+            } catch (err) {
+                console.error(err);
+                setEntry(null);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchEntry();
+    }, [entryId]);
 
     // handler for going back 
     const handleBack = () => {
@@ -49,6 +67,9 @@ export default function delete_edu() {
             navigate("/portfolio");
         }, 3000);
     };
+
+    if (loading) return <p>Loading...</p>;
+    if (!entry) return <p>No data found</p>;
 
     return (
         <div className="min-h-screen bg-[#1a1a2e] flex items-center justify-center px-4">

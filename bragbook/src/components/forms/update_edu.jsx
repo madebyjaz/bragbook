@@ -3,21 +3,15 @@ import { useNavigate, useParams } from "react-router-dom";
 import { db, auth } from "../../firebaseConfig";
 import { doc, getDoc, updateDoc, serverTimestamp } from "firebase/firestore";
 
-const mockEduEntry = {
-    degree: "B.S. Computer Science",
-    school: " University of Memphis",
-    location: "Memphis, TN",
-    dates: "Sep 2015 - Jun 2019",
-    desc: "General Concentration. Graduated with honors. Related coursework: Data Structures, Algorithms, Software Engineering, Databases.",
-};
 
-export default function update_edu() {
+export default function UpdateEdu() {
     // entry ID from URL and set up nav
     const { entryId } = useParams();
     const navigate = useNavigate();
 
     // form and notif states
-    const [formData, setFormData] = useState(mockEduEntry);
+    const [formData, setFormData] = useState(null);
+    const [loading, setLoading] = useState(true);
     const [showNotif, setshowNotif] = useState(false);
 
     // Firebase fetch logic
@@ -26,6 +20,7 @@ export default function update_edu() {
         const fetchEntry = async () => {
             const docSnap = await getDoc(doc(db, "users", auth.currentUser.uid, "education", entryId));
             if (docSnap.exists()) setFormData(docSnap.data());
+            setLoading(false);
         };
         fetchEntry();
     }, [entryId]);
@@ -67,6 +62,9 @@ export default function update_edu() {
 
     // shared input class for styling
     const inputClass = "w-full px-4 py-3 border border-gray-200 rounded-xl text-sm text-gray-900 bg-white outline-none focus:border-[#007C77] focus:ring-2 focus:ring-[#007C77]/20 transition-all";
+
+    if (loading) return <p>Loading...</p>;
+    if (!formData) return <p>No data found</p>;
 
     return (
         <div className="min-h-screen bg-[#1a1a2e] flex items-start justify-center py-10 px-4">
