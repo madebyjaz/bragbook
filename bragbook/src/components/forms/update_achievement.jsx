@@ -22,24 +22,6 @@ export default function UpdateAchievement() {
     const [proofValue, setProofValue] = useState("");
     const [proofFile, setProofFile] = useState(null);
 
-    if (data.proof) {
-        setProofType(data.proof.type || "none");
-        setProofValue(data.proof.value || "");
-    }
-    let proof = null;
-    if (proofType === "url" && proofValue) {
-        proof = { type: "url", value: proofValue };
-    } else if (proofType === "file" && proofFile) {
-        const storage = getStorage();
-        const storageRef = ref(storage, `users/${auth.currentUser.uid}/achievements/${Date.now()}_${proofFile.name}`);
-        await uploadBytes(storageRef, proofFile);
-        const downloadURL = await getDownloadURL(storageRef);
-        proof = { type: "file", value: downloadURL, fileName: proofFile.name };
-    } else if (proofType === "file" && !proofFile && updateFormData.proof?.type === "file") {
-        // keep existing file if no new one selected
-        proof = updateFormData.proof;
-    }   
-
     // form and notif states
     const [loading, setLoading] = useState(true);
     const [isToggled, setisToggled] = useState(false);
@@ -54,6 +36,11 @@ export default function UpdateAchievement() {
                 const data = docSnap.data();
                 setUpdateFormData(data);
                 setisToggled(data.isPresent);
+                // load existing proof data if present
+                if (data.proof) {
+                    setProofType(data.proof.type || "none");
+                    setProofValue(data.proof.value || "");
+                }
                 setLoading(false);
             }
         };
@@ -84,12 +71,27 @@ export default function UpdateAchievement() {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
+        // build proof object based on selected type
+        let proof = null;
+        if (proofType === "url" && proofValue) {
+            proof = { type: "url", value: proofValue };
+        } else if (proofType === "file" && proofFile) {
+            const storage = getStorage();
+            const storageRef = ref(storage, `users/${auth.currentUser.uid}/achievements/${Date.now()}_${proofFile.name}`);
+            await uploadBytes(storageRef, proofFile);
+            const downloadURL = await getDownloadURL(storageRef);
+            proof = { type: "file", value: downloadURL, fileName: proofFile.name };
+        } else if (proofType === "file" && !proofFile && updateFormData.proof?.type === "file") {
+            // keep existing file if no new one selected
+            proof = updateFormData.proof;
+        }
+
         // Used ai to help make the firebase update logic
         try {
             await updateDoc(doc(db, "users", auth.currentUser.uid, "achievements", entryId), {
                 ...updateFormData,
                 isPresent: isToggled,
-                proof, 
+                proof,
                 updatedAt: serverTimestamp(),
             });
         } catch (error) {

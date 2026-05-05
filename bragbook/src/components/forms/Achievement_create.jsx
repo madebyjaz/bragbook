@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { db, auth } from "../../firebaseConfig";
 import { motion, AnimatePresence } from "framer-motion";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
-import {getStorage, ref, uploadBytes, getDownloadURL} from "firebase/storage";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 export default function CreateAchievement() {
 
@@ -13,16 +13,16 @@ export default function CreateAchievement() {
         title: "",
         company: "",
         description: "",
-        dateStarted: { month: "", year: "" },                // will have two dropdown fields for month and year 
-        dateCompleted: { month: "", year: "" },             //will have a 'Present' toggle and two dropdown fields for month and year 
-        isPresent: false,                                  // for the 'Present' toggle (when toggled, the completed fields would not be required)   
+        dateStarted: { month: "", year: "" },
+        dateCompleted: { month: "", year: "" },
+        isPresent: false,
     });
 
     // notif and toggle state
     const [isToggled, setisToggled] = useState(false);
     const [showNotif, setshowNotif] = useState(false);
 
-    // handler for all inputs (for now, just one handler for all fields to make sure it works)
+    // handler for all inputs
     const handleInputChange = (e) => {
         const { name, value, type, checked } = e.target;
         if (name.includes(".")) {
@@ -49,27 +49,27 @@ export default function CreateAchievement() {
     const [proofFile, setProofFile] = useState(null);
     const [proofValue, setProofValue] = useState("");
 
-    let proof = null;
-    if (proofType === "url" && proofValue) {
-        proof = {type: "url", value:proofValue};
-    } else if (proofType === "file" && proofFile) {
-        const storage = getStorage();
-        const storageRef = ref(storage, `proofs/${auth.currentUser.uid}/${Date.now()}_${proofFile.name}`);
-        await uploadBytes(storageRef, proofFile);
-        const downloadURL = await getDownloadURL(storageRef);
-        proof = {type: "file", value: downloadURL, fileName: proofFile.name};
-    }
-
     // submission handler w/ Firebase logic (used ai to help with the firebase logic)
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        
+        // build proof object based on selected type
+        let proof = null;
+        if (proofType === "url" && proofValue) {
+            proof = { type: "url", value: proofValue };
+        } else if (proofType === "file" && proofFile) {
+            const storage = getStorage();
+            const storageRef = ref(storage, `proofs/${auth.currentUser.uid}/${Date.now()}_${proofFile.name}`);
+            await uploadBytes(storageRef, proofFile);
+            const downloadURL = await getDownloadURL(storageRef);
+            proof = { type: "file", value: downloadURL, fileName: proofFile.name };
+        }
+
         try {
             await addDoc(collection(db, "users", auth.currentUser.uid, "achievements"), {
                 ...createFormData,
                 isPresent: isToggled,
-                proof, 
+                proof,
                 createdAt: serverTimestamp(),
             });
         } catch (error) {
@@ -77,13 +77,11 @@ export default function CreateAchievement() {
             return;
         }
 
-
-
         // (For debugging purposes) notif/ nav back
         console.log("Entry has been created:", createFormData);
         setshowNotif(true);
         setTimeout(() => setshowNotif(false), 3000);
-        // reset form and toggle, then nav back 
+        // reset form and toggle, then nav back
         setCreateData({
             title: "",
             company: "",
@@ -102,7 +100,7 @@ export default function CreateAchievement() {
         navigate("/portfolio");
     };
 
-    // Dropdown options for months/ years 
+    // Dropdown options for months/ years
     const months = [
         "January","February","March","April","May","June",
         "July","August","September","October","November","December",
@@ -248,7 +246,7 @@ export default function CreateAchievement() {
                                 <button key={type} type="button"
                                 onClick={() => {setProofType(type); setProofValue(""); setProofFile(null); }}
                                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${proofType === type ? "bg-[#007C77] text-white border-[#007C77]" : "bg-white text-gray-500 border-gray-200 hover:border-[#007C77]"}`}>
-                                    {type === "none" ? "None" : type === "url" ? "URL" : "File"} 
+                                    {type === "none" ? "None" : type === "url" ? "URL" : "File"}
                                 </button>
                             ))}
                         </div>
@@ -258,7 +256,7 @@ export default function CreateAchievement() {
                         )}
                         {/*input for file */}
                         {proofType === "file" && (
-                            <input type="file" accept=".pdf, .png, .jpg, .jpeg, .doc, .docx"  onChange={(e) => setProofFile(e.target.files[0])} placeholder="Upload the achievement proof. Supported files: .pdf, .png, .jpg, .jpeg, .doc, .docx" className="text-sm text-gray-600" />
+                            <input type="file" accept=".pdf, .png, .jpg, .jpeg, .doc, .docx" onChange={(e) => setProofFile(e.target.files[0])} placeholder="Upload the achievement proof. Supported files: .pdf, .png, .jpg, .jpeg, .doc, .docx" className="text-sm text-gray-600" />
                         )}
                     </div>
 
@@ -292,4 +290,4 @@ export default function CreateAchievement() {
             </AnimatePresence>
         </div>
     );
-} 
+}
