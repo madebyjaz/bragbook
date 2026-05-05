@@ -1,86 +1,109 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { db, auth } from "../firebaseConfig";
-import { collection, onSnapshot, orderBy, query } from "firebase/firestore";
-import { signOut } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
+import { collection, onSnapshot, orderBy, query, doc, getDoc, deleteDoc } from "firebase/firestore";
+import { signOut, onAuthStateChanged } from "firebase/auth";
+
+// frames for each section of the profile
+const FRAMES = [
+    { id: "name_card", label: "Profile", x: 750, y: 340, w: 480, h: 500 },
+    { id: "profile",      label: "About Me",     x: 60,   y: 60,   w: 580, h: 500   },
+    { id: "education",    label: "Education",  x: 60,   y: 680,  w: 580, h: 380 },
+    { id: "achievements", label: "Achievements", x: 1360,  y: 60,   w: 580, h: 400},
+];
+
+const CANVAS_W = 2060;
+const CANVAS_H = 1100;
 
 export default function Usr_Portfolio() {
-
-    const [userData, setUserData] = useState(null);
-    const [loadingUser, setLoadingUser] = useState(true);
-
     // state to track which frame the usr is currently on (null = overview)
     const [canvasFrame, setCanvasFrame] = useState(null);
 
-    const [educationEntries, setEducationEntries] = useState([]);
     // useNavigate hook for redirecting after logout
     const navigate = useNavigate();
 
-   // frames for each section of the profile 
-    const FRAMES = [
-        { id: "name_card", label: "Profile", x: 750, y: 340, w: 480, h: 500 },
-        { id: "profile",      label: "About Me",     x: 60,   y: 60,   w: 580, h: 500   },
-        { id: "education",    label: "Education",  x: 60,   y: 680,  w: 580, h: 380 },
-        { id: "achievements", label: "Achievements", x: 1360,  y: 60,   w: 580, h: 400},
-    ];
+    // state to hold real user profile data fetched from Firestore
+    const [userData, setUserData] = useState(null);
 
-    const CANVAS_W = 2060;
-    const CANVAS_H = 1100;
+    // state to track loading while fetching user data from Firestore
+    const [profileLoading, setProfileLoading] = useState(true);
 
+    // state to hold the authenticated user once Firebase Auth is ready
+    const [currentUser, setCurrentUser] = useState(null);
+
+    // education entries from Firestore
+    const [educationEntries, setEducationEntries] = useState([]);
+
+    // wait for Firebase Auth to initialize before fetching any data
     useEffect(() => {
-        if (!auth.currentUser) return;
-
-        const fetchUser = async () => {
-            try {
-                const snap = await getDoc(doc(db, "users", auth.currentUser.uid));
-
-                if (snap.exists()) {
-                    setUserData(snap.data());
-                } else {
-                    setUserData(null);
-                }
-
-            } catch (err) {
-                console.error("User fetch error:", err);
-                setUserData(null);
-            } finally {
-                setLoadingUser(false);
+        const unsubscribe = onAuthStateChanged(auth, (user) => {
+            setCurrentUser(user);
+            if (!user) {
+                setProfileLoading(false);
+                navigate('/login');
             }
-        };
-
-        fetchUser();
+        });
+        return () => unsubscribe();
     }, []);
 
+    // fetch the logged-in user's profile data from Firestore
     useEffect(() => {
-        if (!auth.currentUser) return;
+        if (!currentUser) return;
+        const fetchProfile = async () => {
+            const docSnap = await getDoc(doc(db, 'users', currentUser.uid));
+            if (docSnap.exists()) {
+                setUserData(docSnap.data());
+            }
+            setProfileLoading(false);
+        };
+        fetchProfile();
+    }, [currentUser]);
 
-        const q = query(
-            collection(db, "users", auth.currentUser.uid, "education"),
-            orderBy("createdAt", "desc")
-        );
-
+    // firebase fetch for education entries
+    useEffect(() => {
+        if (!currentUser) return;
+        const q = query(collection(db, "users", currentUser.uid, "education"), orderBy("createdAt", "desc"));
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const entries = snapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()
             }));
-
             setEducationEntries(entries);
         });
-
         return () => unsubscribe();
-    }, []);
+    }, [currentUser]);
 
-    // handler for logging out — signs out of Firebase and redirects to homepage
+    // firebase fetch for achievement entries (#75)
+    const [achievementEntries, setAchievementEntries] = useState([]);
+
+    // tracks which achievement card is expanded to show details (#90)
+    const [expandedAchievement, setExpandedAchievement] = useState(null);
+
+    useEffect(() => {
+        if (!currentUser) return;
+        const q = query(collection(db, "users", currentUser.uid, "achievements"), orderBy("createdAt", "desc"));
+        const unsub = onSnapshot(q, (snapshot) => {
+            const entries = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+            setAchievementEntries(entries);
+        });
+        return () => unsub();
+    }, [currentUser]);
+
+    // This allows user to sign out of Firebase and be redirected to homepage
     const handleLogout = async () => {
         await signOut(auth);
         navigate("/");
     };
 
-    // handler to navigate to a specific frame ( clicking on a section in the overview/ using the prev/next buttons)
+    // deletes an achievement entry from Firestore (#78)
+    const handleDeleteAchievement = async (e, entryId) => {
+        e.stopPropagation();
+        if (!window.confirm("Are you sure you want to delete this achievement?")) return;
+        await deleteDoc(doc(db, "users", currentUser.uid, "achievements", entryId));
+    };
+
+    // Acts as a handler to navigate to a specific frame
     const goTo = (frame) => setCanvasFrame(frame);
-    // const goOverview = () => setCanvasFrame(null);
 
     const currentIdx = FRAMES.findIndex(f => f.id === canvasFrame?.id);
     const prevFrame  = currentIdx > 0 ? FRAMES[currentIdx - 1] : null;
@@ -110,8 +133,33 @@ export default function Usr_Portfolio() {
         return `scale(${scale}) translate(${tx}px, ${ty}px)`;
     };
 
-    if (loadingUser) return <p>Loading...</p>;
-    if (!userData) return <p>No profile data found</p>;
+    // shows a loading indicator while fetching profile data from Firebase
+    if (profileLoading) return (
+        <div className="fixed inset-0 flex items-center justify-center bg-[#f0f4f8]">
+            <p className="text-[#007C77] font-semibold text-sm">Loading your portfolio...</p>
+        </div>
+    );
+
+    // reusable avatar component — supports profile photo upload (#110)
+    const Avatar = ({ size = "lg" }) => {
+        const sizeClass = size === "lg"
+            ? "w-20 h-20 text-3xl border-4"
+            : "w-14 h-14 text-xl border-2";
+        const initials = userData?.name?.split(' ').map(n => n[0]).join('').toUpperCase() || '?';
+
+        return userData?.photoURL ? (
+            <img
+                src={userData.photoURL}
+                alt="Profile"
+                className={`${sizeClass} rounded-full object-cover border-white shadow-lg`}
+            />
+        ) : (
+            <div className={`${sizeClass} rounded-full flex items-center justify-center text-white font-extrabold border-white shadow-lg`}
+                style={{ background: "linear-gradient(135deg, #007C77, #0d9488)" }}>
+                {initials}
+            </div>
+        );
+    };
 
     return (
         <div className="fixed inset-0 flex flex-col overflow-hidden" style={{background: "#f0f4f8"}}>
@@ -119,34 +167,28 @@ export default function Usr_Portfolio() {
             <nav className="bg-white border-b border-gray-200 flex items-center justify-between px-6 z-50 shrink-0 shadow-sm" style={{ height: 52 }}>
                 <span className="text-xl font-bold" style={{ background: "linear-gradient(90deg, #003C61, #007C77, #0d9488)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}> BragBook.cv </span>
                 <div className="flex items-center gap-3">
+                    {/* dropdown for add/edit actions (Bret's PR #112) */}
                     <div className="relative group">
-                        <button
-                            className="text-sm font-semibold text-white bg-[#003C61] px-4 py-1.5 rounded-lg"
-                        >
+                        <button className="text-sm font-semibold text-white bg-[#003C61] px-4 py-1.5 rounded-lg">
                             + Add / Edit
                         </button>
-
-                        <div className="absolute right-0 mt-2 w-44 bg-white border border-gray-200 rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button
-                                onClick={() => navigate("/profile/edit")}
-                                className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
-                            >
-                                Edit Profile
-                            </button>
-                            <button
-                                onClick={() => navigate("/education/create")}
-                                className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
-                            >
-                                Add Education
-                            </button>
-                            <button
-                                onClick={() => navigate("/achievements/create")}
-                                className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
-                            >
-                                Add Achievement
-                            </button>
+                        <div className="absolute right-0 mt-2 w-44 bg-white border border-gray-200 rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50">
+                            <button onClick={() => navigate("/profile/edit")} className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100">Edit Profile</button>
+                            <button onClick={() => navigate("/education/create")} className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100">Add Education</button>
+                            <button onClick={() => navigate("/achievements/create")} className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100">Add Achievement</button>
                         </div>
                     </div>
+                    {/* Share portfolio link button (#77) */}
+                    <button
+                        onClick={() => {
+                            const link = `${window.location.origin}/u/${currentUser.uid}`;
+                            navigator.clipboard.writeText(link);
+                            alert("Portfolio link copied!");
+                        }}
+                        className="text-sm font-semibold text-[#007C77] bg-white border border-[#007C77] hover:bg-[#007C77] hover:text-white px-4 py-1.5 rounded-lg cursor-pointer transition-colors"
+                    >
+                        Share Portfolio
+                    </button>
                     {/* Logout button — signs out of Firebase and redirects to homepage */}
                     <button
                         onClick={handleLogout}
@@ -170,13 +212,10 @@ export default function Usr_Portfolio() {
                         <div className="absolute top-0 left-0 right-0 h-16 rounded-t-2xl"
                             style={{ background: "linear-gradient(135deg, #007C77, #0d9488, #003C61)" }} />
                         <div className="flex flex-col items-center" style={{ marginTop: 40 }}>
-                            <div className="w-20 h-20 rounded-full flex items-center justify-center text-white text-3xl font-extrabold border-4 border-white shadow-lg"
-                                style={{ background: "linear-gradient(135deg, #007C77, #0d9488)" }}>
-                                {userData?.initials}
-                            </div>
-                            <p className="text-xl font-extrabold text-[#003C61] mt-3">{userData?.name}</p>
-                            <p className="text-xs text-gray-400 text-center mt-1 leading-snug px-4">{userData?.tagline}</p>
-                            <p className="text-[10px] text-gray-300 mt-1">📍 {userData?.location}</p>
+                            <Avatar size="lg" />
+                            <p className="text-xl font-extrabold text-[#003C61] mt-3">{userData?.name || 'Your Name'}</p>
+                            <p className="text-xs text-gray-400 text-center mt-1 leading-snug px-4">{userData?.tagline || 'Add a tagline in Edit Profile'}</p>
+                            <p className="text-[10px] text-gray-300 mt-1">📍 {userData?.location || ''}</p>
                         </div>
                     </FrameCard>
 
@@ -184,43 +223,33 @@ export default function Usr_Portfolio() {
                         <div className="absolute left-6 right-6" style={{ top: 36 }}>
                             <div className="flex items-end gap-4">
                                 <div className="flex-1 pb-1">
-                                    <p className="text-[10px] text-gray-300 mt-1">📍 {userData?.location} · ✉️ {userData?.email}</p>
+                                    <p className="text-[10px] text-gray-300 mt-1">📍 {userData?.location || ''} · ✉️ {userData?.email || ''}</p>
                                 </div>
                                 <button onClick={(e) => { e.stopPropagation(); navigate("/profile/edit")}} className="self-start bg-gray-100 hover:bg-gray-200 text-[#003C61] text-[10px] font-semibold px-3 py-1.5 rounded-lg transition-colors border-none cursor-pointer"> Edit Profile </button>
                             </div>
-                            <p className="text-[11px] text-gray-400 mt-4 mb-3">{userData?.bio}</p>
+                            <p className="text-[11px] text-gray-400 mt-4 mb-3">{userData?.bio || 'Add a bio in Edit Profile'}</p>
                             <p className="text-xs font-extrabold text-[#003C61] mb-2">Connect</p>
                             <div className="grid grid-cols-2 gap-2">
-                                {userData?.socials &&
-                                    Object.entries(userData.socials).map(([key, value], i) => (
-                                        <div
-                                            key={i}
-                                            className="border border-gray-200 rounded-xl p-2.5 flex gap-2.5 items-center hover:border-[#007C77] transition-colors cursor-pointer"
-                                        >
-                                            <div
-                                                className="w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-extrabold text-[#007C77] shrink-0"
-                                                style={{ background: "rgba(0,124,119,0.08)" }}
-                                            >
-                                                {key[0].toUpperCase()}
+                                {/* socials from Firestore are stored as an object — convert to array for display */}
+                                {userData?.socials && Object.entries(userData.socials).map(([platform, url], i) => (
+                                    url ? (
+                                        <div key={i} className="border border-gray-200 rounded-xl p-2.5 flex gap-2.5 items-center hover:border-[#007C77] transition-colors cursor-pointer">
+                                            <div className="w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-extrabold text-[#007C77] shrink-0" style={{ background: "rgba(0,124,119,0.08)" }}>
+                                                {platform.slice(0, 2).toUpperCase()}
                                             </div>
-
                                             <div>
-                                                <p className="text-[11px] font-bold text-[#003C61]">
-                                                    {key}
-                                                </p>
-                                                <p className="text-[9px] text-gray-300">
-                                                    {value || "No link added"}
-                                                </p>
+                                                <p className="text-[11px] font-bold text-[#003C61] capitalize">{platform}</p>
+                                                <p className="text-[9px] text-gray-300 truncate">{url}</p>
                                             </div>
                                         </div>
-                                    ))
-                                }
+                                    ) : null
+                                ))}
                             </div>
                         </div>
                     </FrameCard>
 
                     <FrameCard frame={FRAMES[2]} active={canvasFrame?.id === "education"} onClick={() => goTo(FRAMES[2])}>
-                        <div className="flex justify-between items-center mb-3"> 
+                        <div className="flex justify-between items-center mb-3">
                             <p className="text-sm font-extrabold text-[#003C61]"> Education</p>
                             <button onClick={(e) => {e.stopPropagation(); navigate("/education/create")}} className="bg-[#007C77] hover:bg-[#005f5b] text-white text-[10px] font-bold px-3 py-1.5 rounded-lg transition-colors border-none cursor-pointer"> + New Education </button>
                         </div>
@@ -241,32 +270,84 @@ export default function Usr_Portfolio() {
                     </FrameCard>
 
                     <FrameCard frame={FRAMES[3]} active={canvasFrame?.id === "achievements"} onClick={() => goTo(FRAMES[3])}>
-                        <div className="flex justify-between items-center mb-3"> 
+                        <div className="flex justify-between items-center mb-3">
                             <p className="text-sm font-extrabold text-[#003C61]"> Achievements</p>
                             <button onClick={(e) => {e.stopPropagation(); navigate("/achievements/create")}} className="bg-[#007C77] hover:bg-[#005f5b] text-white text-[10px] font-bold px-3 py-1.5 rounded-lg transition-colors border-none cursor-pointer"> + Add New Entry</button>
                         </div>
-                        <div>
-                            {(userData?.achievements ?? []).map((b_entry, i) => (
-                                <div
-                                    key={i}
-                                    className="border border-gray-200 rounded-xl p-3 flex flex-col gap-1 hover:border-[#007C77] transition-colors cursor-pointer"
-                                >
-                                    <div>
-                                        <p className="text-[11px] font-bold text-[#003C61]">
-                                            {b_entry.title}
-                                        </p>
+                        {/* achievement entries fetched from Firestore (#75) — replaces old hardcoded data */}
+                        <div style={{overflowY: "auto", maxHeight: "300px"}} onClick={(e) => e.stopPropagation()}>
+                            {achievementEntries.length === 0 ? (
+                                <p className="text-xs text-gray-300 mt-4 text-center">No achievements yet. Click "+ Add New Entry" to get started!</p>
+                            ) : (
+                                achievementEntries.map((entry) => (
+                                    <div key={entry.id} className="border border-gray-200 rounded-xl p-3 mb-2 flex flex-col gap-1 hover:border-[#007C77] transition-colors cursor-pointer">
+                                        <p className="text-[11px] font-bold text-[#003C61]">{entry.title}</p>
+                                        <p className="text-[10px] text-gray-400">{entry.company || entry.category}</p>
                                         <p className="text-[10px] text-gray-400">
-                                            {b_entry.company}
+                                            {entry.dateStarted?.month} {entry.dateStarted?.year} — {entry.isPresent ? "Present" : `${entry.dateCompleted?.month} ${entry.dateCompleted?.year}`}
                                         </p>
-                                        <p className="text-[10px] text-gray-400">
-                                            {b_entry.dates}
-                                        </p>
-                                        <span className="text-[10px] text-[#007C77] font-semibold mt-1">
-                                            View details →
+                                        {/* toggle description visibility (#90) */}
+                                        <span
+                                            onClick={(e) => { e.stopPropagation(); setExpandedAchievement(expandedAchievement === entry.id ? null : entry.id); }}
+                                            className="text-[10px] text-[#007C77] font-semibold mt-1 cursor-pointer"
+                                        >
+                                            {expandedAchievement === entry.id ? "Hide details ↑" : "View details →"}
                                         </span>
+                                        {/* expanded description view (#90) */}
+                                        {expandedAchievement === entry.id && (
+                                            <div className="mt-2 pt-2 border-t border-gray-100">
+                                                <p className="text-[10px] font-semibold text-[#003C61] mb-1">Description</p>
+                                                <p className="text-[10px] text-gray-400">{entry.description || "No description provided."}</p>
+                                                {/* Proof attachment */}
+                                                {!entry.proof || entry.proof.type === "none" ? (
+                                                    <div className="border-t border-gray-100 pt-3 mt-3">
+                                                        <p className="text-[10px] font-extrabold text-[#003C61] uppercase tracking-widest mb-1">📎 Proof of Achievement</p>
+                                                        <p className="text-[10px] text-gray-400 mb-2">This achievement has not been verified. Submit proof to verify your achievement.</p>
+                                                        <button
+                                                            onClick={(e) => { e.stopPropagation(); }}
+                                                            className="text-[10px] font-bold text-white bg-[#007C77] hover:bg-[#005f5b] px-3 py-1.5 rounded-lg border-none cursor-pointer transition-colors">
+                                                            + Add Proof
+                                                        </button>
+                                                    </div>
+                                                ) : (
+                                                    <div className="border-t border-gray-100 pt-3 mt-3">
+                                                        <p className="text-[10px] font-extrabold text-[#003C61] uppercase tracking-widest mb-2">📎 Proof of Achievement</p>
+                                                        {entry.proof.type === "url" && (
+                                                            <a href={entry.proof.value} target="_blank" rel="noopener noreferrer"
+                                                                className="flex items-center gap-2 border border-gray-200 rounded-xl p-3 hover:border-[#007C77] transition-colors no-underline">
+                                                                <div className="w-8 h-8 rounded-lg flex items-center justify-center text-[#007C77] shrink-0"
+                                                                    style={{ background: "rgba(0,124,119,0.08)" }}>🔗</div>
+                                                                <div>
+                                                                    <p className="text-xs font-bold text-[#003C61]">View Proof</p>
+                                                                    <p className="text-[10px] text-gray-400 truncate">{entry.proof.value}</p>
+                                                                </div>
+                                                            </a>
+                                                        )}
+                                                        {entry.proof.type === "file" && (
+                                                            <a href={entry.proof.value} target="_blank" rel="noopener noreferrer"
+                                                                className="flex items-center gap-2 border border-gray-200 rounded-xl p-3 hover:border-[#007C77] transition-colors no-underline">
+                                                                <div className="w-8 h-8 rounded-lg flex items-center justify-center text-[#007C77] shrink-0"
+                                                                    style={{ background: "rgba(0,124,119,0.08)" }}>📄</div>
+                                                                <div>
+                                                                    <p className="text-xs font-bold text-[#003C61]">{entry.proof.fileName || "View File"}</p>
+                                                                    <p className="text-[10px] text-[#007C77] font-semibold">Click to download →</p>
+                                                                </div>
+                                                            </a>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                        {/* delete button for achievement entry (#78) */}
+                                        <button
+                                            onClick={(e) => handleDeleteAchievement(e, entry.id)}
+                                            className="text-[10px] text-red-400 hover:text-red-600 font-semibold mt-1 bg-transparent border-none cursor-pointer text-left p-0"
+                                        >
+                                            Delete
+                                        </button>
                                     </div>
-                                </div>
-                            ))}
+                                ))
+                            )}
                         </div>
                     </FrameCard>
 
@@ -280,7 +361,7 @@ export default function Usr_Portfolio() {
                     ‹
                 </button>
             )}
-            
+
             {/* Next arrow */}
             {canvasFrame && nextFrame && (
                 <button onClick={() => goTo(nextFrame)}
@@ -296,7 +377,7 @@ export default function Usr_Portfolio() {
 // Reusable Frame Card component for each section
 function FrameCard({ frame, active, onClick, children }) {
     return (
-        <div onClick={onClick} style={{ position: "absolute", left: frame.x, top: frame.y, width: frame.w, height: frame.h, padding: 28, boxSizing: "border-box", borderRadius: 20, backgroundColor: "#ffffff", boxShadow: active ? "0 0 0 3px #007C77, 0 24px 60px rgba(0,0,0,0.18)" : "0 4px 24px rgba(0,0,0,0.08)", overflow: "hidden", cursor: active ? "default" : "pointer", transition: "box-shadow 0.2s ease"}} 
+        <div onClick={onClick} style={{ position: "absolute", left: frame.x, top: frame.y, width: frame.w, height: frame.h, padding: 28, boxSizing: "border-box", borderRadius: 20, backgroundColor: "#ffffff", boxShadow: active ? "0 0 0 3px #007C77, 0 24px 60px rgba(0,0,0,0.18)" : "0 4px 24px rgba(0,0,0,0.08)", overflow: "hidden", cursor: active ? "default" : "pointer", transition: "box-shadow 0.2s ease"}}
         onMouseEnter={e => { if (!active) e.currentTarget.style.boxShadow = "0 0 0 2.5px #007C77, 0 12px 40px rgba(0,0,0,0.13)"; }} onMouseLeave={e => { if (!active) e.currentTarget.style.boxShadow = "0 4px 24px rgba(0,0,0,0.08)"; }}>
             {children}
         </div>

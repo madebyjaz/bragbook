@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { db, auth } from "../../firebaseConfig";
 import { motion, AnimatePresence } from "framer-motion";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import {getStorage, ref, uploadBytes, getDownloadURL} from "firebase/storage";
 
 export default function CreateAchievement() {
 
@@ -44,6 +45,21 @@ export default function CreateAchievement() {
     // handler for toggling Present (for date completed)
     const ToggleHandler = () => setisToggled(!isToggled);
 
+    const [proofType, setProofType] = useState("none");
+    const [proofFile, setProofFile] = useState(null);
+    const [proofValue, setProofValue] = useState("");
+
+    let proof = null;
+    if (proofType === "url" && proofValue) {
+        proof = {type: "url", value:proofValue};
+    } else if (proofType === "file" && proofFile) {
+        const storage = getStorage();
+        const storageRef = ref(storage, `proofs/${auth.currentUser.uid}/${Date.now()}_${proofFile.name}`);
+        await uploadBytes(storageRef, proofFile);
+        const downloadURL = await getDownloadURL(storageRef);
+        proof = {type: "file", value: downloadURL, fileName: proofFile.name};
+    }
+
     // submission handler w/ Firebase logic (used ai to help with the firebase logic)
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -53,6 +69,7 @@ export default function CreateAchievement() {
             await addDoc(collection(db, "users", auth.currentUser.uid, "achievements"), {
                 ...createFormData,
                 isPresent: isToggled,
+                proof, 
                 createdAt: serverTimestamp(),
             });
         } catch (error) {
@@ -221,6 +238,28 @@ export default function CreateAchievement() {
                                 </motion.div>
                             )}
                         </AnimatePresence>
+                    </div>
+
+                    <div className="flex flex-col gap-2">
+                        <label className={labelClass}> Proof of Achievement </label>
+                        {/* type selector */}
+                        <div className="flex gap-2">
+                            {["none", "url", "file"].map((type) => (
+                                <button key={type} type="button"
+                                onClick={() => {setProofType(type); setProofValue(""); setProofFile(null); }}
+                                className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${proofType === type ? "bg-[#007C77] text-white border-[#007C77]" : "bg-white text-gray-500 border-gray-200 hover:border-[#007C77]"}`}>
+                                    {type === "none" ? "None" : type === "url" ? "URL" : "File"} 
+                                </button>
+                            ))}
+                        </div>
+                        {/* input for url */}
+                        {proofType === "url" && (
+                            <input type="url" name="proofValue" value={proofValue} onChange={(e) => setProofValue(e.target.value)} placeholder="Enter the URL link for your achievement proof (e.g. certificate, news article, screenshot of nonconfidential managerial email, etc.)" className={inputClass} />
+                        )}
+                        {/*input for file */}
+                        {proofType === "file" && (
+                            <input type="file" accept=".pdf, .png, .jpg, .jpeg, .doc, .docx"  onChange={(e) => setProofFile(e.target.files[0])} placeholder="Upload the achievement proof. Supported files: .pdf, .png, .jpg, .jpeg, .doc, .docx" className="text-sm text-gray-600" />
+                        )}
                     </div>
 
                     {/* Submit */}
