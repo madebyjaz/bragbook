@@ -3,22 +3,14 @@ import { useNavigate, useParams } from "react-router-dom";
 import { db, auth } from "../../firebaseConfig";
 import { doc, getDoc } from "firebase/firestore";
 
-const mockEduEntry = {
-    id: "abc123",
-    degree: "B.S. Computer Science",
-    school: " University of Memphis",
-    location: "Memphis, TN",
-    dates: "Sep 2015 - Jun 2019",
-    desc: "General Concentration. Graduated with honors. Related coursework: Data Structures, Algorithms, Software Engineering, Databases.",
-};
-
-export default function view_edu() {
+export default function ViewEdu() {
 
     // entry ID from URL and set up nav
     const { entryId } = useParams();
     const navigate = useNavigate();
 
-    const [entry, setEntry] = useState(mockEduEntry);
+    const [entry, setEntry] = useState(null);
+    const [loading, setLoading] = useState(true);
 
     // Firebase fetch logic
     useEffect(() => {
@@ -26,6 +18,7 @@ export default function view_edu() {
         const fetchEntry = async () => {
             const docSnap = await getDoc(doc(db, "users", auth.currentUser.uid, "education", entryId));
             if (docSnap.exists()) setEntry({ id: docSnap.id, ...docSnap.data() });
+            setLoading(false);
         };
         fetchEntry();
     }, [entryId]);
@@ -45,6 +38,9 @@ export default function view_edu() {
         navigate(`/education/delete/${entry.id}`);
         console.log("navigate to delete");
     };
+
+    if (loading) return <p>Loading...</p>;
+    if (!entry) return <p>No data found</p>;
 
     return (
         <div className="min-h-screen bg-[#1a1a2e] flex items-start justify-center py-10 px-4">

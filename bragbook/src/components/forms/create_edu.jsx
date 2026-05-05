@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { db, auth } from "../../firebaseConfig";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 
-export default function education_create() {
+export default function EducationCreate() {
     // form state and nav 
     const navigate = useNavigate();
     const [formData, setFormData] = useState({

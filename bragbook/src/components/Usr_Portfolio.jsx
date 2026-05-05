@@ -1,63 +1,74 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { db, auth } from "../firebaseConfig";
 import { collection, onSnapshot, orderBy, query } from "firebase/firestore";
 import { signOut } from "firebase/auth";
-
-// sample data 
-const user = {
-    name: "John Doe",
-    initials: "JD",
-    tagline: "Full-Stack Developer | UI/UX Enthusiast | Open Source Contributor",
-    location: "San Francisco, CA",
-    email: "john.doe@example.com",
-    bio: "Passionate software engineer with 5+ years of experience.", 
-    achievements: [
-        { title: "E-Commerce Platform Development", company: "Tech Solutions Inc.", dates: "Jan 2022 - Dec 2023" },
-        { title: "AI-Powered Analytics Dashboard",  company: "Data Insights Corp",  dates: "Mar 2021 - Aug 2021" },
-        { title: "Open Source Contribution - UI Lib", company: "GitHub Community",  dates: "Jun 2020 - Present" },
-        { title: "Mobile App for Healthcare",        company: "HealthTech Startup",  dates: "Sep 2019 - Feb 2020" },
-    ],
-    socials: [
-        { platform: "LinkedIn",  url: "linkedin.com/in/johndoe", icon: "in" },
-        { platform: "GitHub",    url: "github.com/johndoe",      icon: "gh" },
-        { platform: "Twitter",   url: "twitter.com/johndoe",     icon: "tw" },
-        { platform: "Portfolio", url: "johndoe.com",             icon: "PF" },
-    ],
-};
-
-// frames for each section of the profile 
-const FRAMES = [
-    { id: "name_card", label: "Profile", x: 750, y: 340, w: 480, h: 500 },
-    { id: "profile",      label: "About Me",     x: 60,   y: 60,   w: 580, h: 500   },
-    { id: "education",    label: "Education",  x: 60,   y: 680,  w: 580, h: 380 },
-    { id: "achievements", label: "Achievements", x: 1360,  y: 60,   w: 580, h: 400},
-];
-
-const CANVAS_W = 2060;
-const CANVAS_H = 1100;
+import { doc, getDoc } from "firebase/firestore";
 
 export default function Usr_Portfolio() {
+
+    const [userData, setUserData] = useState(null);
+    const [loadingUser, setLoadingUser] = useState(true);
+
     // state to track which frame the usr is currently on (null = overview)
     const [canvasFrame, setCanvasFrame] = useState(null);
 
+    const [educationEntries, setEducationEntries] = useState([]);
     // useNavigate hook for redirecting after logout
     const navigate = useNavigate();
 
-    // mock education entries — moved inside component to fix invalid hook call error
-    const [educationEntries, setEducationEntries] = useState([
-        { degree: "B.S. Computer Science", school: "Stanford University", location: "Stanford, CA", dates: "Sep 2015 - Jun 2019", desc: "Focused on software engineering and AI." },
-        { degree: "M.S. Software Engineering", school: "MIT", location: "Cambridge, MA", dates: "Sep 2019 - Jun 2021", desc: "Specialized in distributed systems." },
-    ]);
+   // frames for each section of the profile 
+    const FRAMES = [
+        { id: "name_card", label: "Profile", x: 750, y: 340, w: 480, h: 500 },
+        { id: "profile",      label: "About Me",     x: 60,   y: 60,   w: 580, h: 500   },
+        { id: "education",    label: "Education",  x: 60,   y: 680,  w: 580, h: 380 },
+        { id: "achievements", label: "Achievements", x: 1360,  y: 60,   w: 580, h: 400},
+    ];
 
-    // firebase fetch for education entries (used ai to help write this useeffect funct.)
+    const CANVAS_W = 2060;
+    const CANVAS_H = 1100;
+
     useEffect(() => {
         if (!auth.currentUser) return;
-        const q = query(collection(db, "users", auth.currentUser.uid, "education"), orderBy("createdAt", "desc"));
+
+        const fetchUser = async () => {
+            try {
+                const snap = await getDoc(doc(db, "users", auth.currentUser.uid));
+
+                if (snap.exists()) {
+                    setUserData(snap.data());
+                } else {
+                    setUserData(null);
+                }
+
+            } catch (err) {
+                console.error("User fetch error:", err);
+                setUserData(null);
+            } finally {
+                setLoadingUser(false);
+            }
+        };
+
+        fetchUser();
+    }, []);
+
+    useEffect(() => {
+        if (!auth.currentUser) return;
+
+        const q = query(
+            collection(db, "users", auth.currentUser.uid, "education"),
+            orderBy("createdAt", "desc")
+        );
+
         const unsubscribe = onSnapshot(q, (snapshot) => {
-            const entries = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            const entries = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            }));
+
             setEducationEntries(entries);
         });
+
         return () => unsubscribe();
     }, []);
 
@@ -99,12 +110,43 @@ export default function Usr_Portfolio() {
         return `scale(${scale}) translate(${tx}px, ${ty}px)`;
     };
 
+    if (loadingUser) return <p>Loading...</p>;
+    if (!userData) return <p>No profile data found</p>;
+
     return (
         <div className="fixed inset-0 flex flex-col overflow-hidden" style={{background: "#f0f4f8"}}>
             {/* Nav Bar */}
             <nav className="bg-white border-b border-gray-200 flex items-center justify-between px-6 z-50 shrink-0 shadow-sm" style={{ height: 52 }}>
                 <span className="text-xl font-bold" style={{ background: "linear-gradient(90deg, #003C61, #007C77, #0d9488)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}> BragBook.cv </span>
                 <div className="flex items-center gap-3">
+                    <div className="relative group">
+                        <button
+                            className="text-sm font-semibold text-white bg-[#003C61] px-4 py-1.5 rounded-lg"
+                        >
+                            + Add / Edit
+                        </button>
+
+                        <div className="absolute right-0 mt-2 w-44 bg-white border border-gray-200 rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button
+                                onClick={() => navigate("/profile/edit")}
+                                className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                            >
+                                Edit Profile
+                            </button>
+                            <button
+                                onClick={() => navigate("/education/create")}
+                                className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                            >
+                                Add Education
+                            </button>
+                            <button
+                                onClick={() => navigate("/achievements/create")}
+                                className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                            >
+                                Add Achievement
+                            </button>
+                        </div>
+                    </div>
                     {/* Logout button — signs out of Firebase and redirects to homepage */}
                     <button
                         onClick={handleLogout}
@@ -130,11 +172,11 @@ export default function Usr_Portfolio() {
                         <div className="flex flex-col items-center" style={{ marginTop: 40 }}>
                             <div className="w-20 h-20 rounded-full flex items-center justify-center text-white text-3xl font-extrabold border-4 border-white shadow-lg"
                                 style={{ background: "linear-gradient(135deg, #007C77, #0d9488)" }}>
-                                {user.initials}
+                                {userData?.initials}
                             </div>
-                            <p className="text-xl font-extrabold text-[#003C61] mt-3">{user.name}</p>
-                            <p className="text-xs text-gray-400 text-center mt-1 leading-snug px-4">{user.tagline}</p>
-                            <p className="text-[10px] text-gray-300 mt-1">📍 {user.location}</p>
+                            <p className="text-xl font-extrabold text-[#003C61] mt-3">{userData?.name}</p>
+                            <p className="text-xs text-gray-400 text-center mt-1 leading-snug px-4">{userData?.tagline}</p>
+                            <p className="text-[10px] text-gray-300 mt-1">📍 {userData?.location}</p>
                         </div>
                     </FrameCard>
 
@@ -142,22 +184,37 @@ export default function Usr_Portfolio() {
                         <div className="absolute left-6 right-6" style={{ top: 36 }}>
                             <div className="flex items-end gap-4">
                                 <div className="flex-1 pb-1">
-                                    <p className="text-[10px] text-gray-300 mt-1">📍 {user.location} · ✉️ {user.email}</p>
+                                    <p className="text-[10px] text-gray-300 mt-1">📍 {userData?.location} · ✉️ {userData?.email}</p>
                                 </div>
-                                <button /* onClick={(e) => { e.stopPropagation(); navigate("/profile/edit")}} */ className="self-start bg-gray-100 hover:bg-gray-200 text-[#003C61] text-[10px] font-semibold px-3 py-1.5 rounded-lg transition-colors border-none cursor-pointer"> Edit Profile </button>
+                                <button onClick={(e) => { e.stopPropagation(); navigate("/profile/edit")}} className="self-start bg-gray-100 hover:bg-gray-200 text-[#003C61] text-[10px] font-semibold px-3 py-1.5 rounded-lg transition-colors border-none cursor-pointer"> Edit Profile </button>
                             </div>
-                            <p className="text-[11px] text-gray-400 mt-4 mb-3">{user.bio}</p>
+                            <p className="text-[11px] text-gray-400 mt-4 mb-3">{userData?.bio}</p>
                             <p className="text-xs font-extrabold text-[#003C61] mb-2">Connect</p>
                             <div className="grid grid-cols-2 gap-2">
-                                {user.socials.map((soc, i) => (
-                                    <div key={i} className="border border-gray-200 rounded-xl p-2.5 flex gap-2.5 items-center hover:border-[#007C77] transition-colors cursor-pointer">
-                                        <div className="w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-extrabold text-[#007C77] shrink-0" style={{ background: "rgba(0,124,119,0.08)" }}> {soc.icon} </div>
-                                        <div>
-                                            <p className="text-[11px] font-bold text-[#003C61]">{soc.platform}</p>
-                                            <p className="text-[9px] text-gray-300">{soc.url}</p>
+                                {userData?.socials &&
+                                    Object.entries(userData.socials).map(([key, value], i) => (
+                                        <div
+                                            key={i}
+                                            className="border border-gray-200 rounded-xl p-2.5 flex gap-2.5 items-center hover:border-[#007C77] transition-colors cursor-pointer"
+                                        >
+                                            <div
+                                                className="w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-extrabold text-[#007C77] shrink-0"
+                                                style={{ background: "rgba(0,124,119,0.08)" }}
+                                            >
+                                                {key[0].toUpperCase()}
+                                            </div>
+
+                                            <div>
+                                                <p className="text-[11px] font-bold text-[#003C61]">
+                                                    {key}
+                                                </p>
+                                                <p className="text-[9px] text-gray-300">
+                                                    {value || "No link added"}
+                                                </p>
+                                            </div>
                                         </div>
-                                    </div>
-                                ))}
+                                    ))
+                                }
                             </div>
                         </div>
                     </FrameCard>
@@ -165,13 +222,13 @@ export default function Usr_Portfolio() {
                     <FrameCard frame={FRAMES[2]} active={canvasFrame?.id === "education"} onClick={() => goTo(FRAMES[2])}>
                         <div className="flex justify-between items-center mb-3"> 
                             <p className="text-sm font-extrabold text-[#003C61]"> Education</p>
-                            <button /* onClick={(e) => {e.stopPropagation(); navigate("/education/create")}} */ className="bg-[#007C77] hover:bg-[#005f5b] text-white text-[10px] font-bold px-3 py-1.5 rounded-lg transition-colors border-none cursor-pointer"> + New Education </button>
+                            <button onClick={(e) => {e.stopPropagation(); navigate("/education/create")}} className="bg-[#007C77] hover:bg-[#005f5b] text-white text-[10px] font-bold px-3 py-1.5 rounded-lg transition-colors border-none cursor-pointer"> + New Education </button>
                         </div>
                         {educationEntries.length === 0 ? (
                             <p className="text-xs text-gray-300 mt-4 text-center">No education entries yet. Click "Add Education" to get started!</p>
                         ) : (
                             educationEntries.map((edu, i) => (
-                                <div key={i} /* onClick={(e) => { e.stopPropagation(); navigate(`/education/view/${edu.id}`) }} */ className="flex gap-3 p-3 mb-2 border border-gray-100 rounded-xl hover:border-[#007C77]/40 transition-colors">
+                                <div key={i} onClick={(e) => { e.stopPropagation(); navigate(`/education/view/${edu.id}`) }} className="flex gap-3 p-3 mb-2 border border-gray-100 rounded-xl hover:border-[#007C77]/40 transition-colors">
                                     <div>
                                         <p className="text-sm font-semibold text-[#003C61]">{edu.degree}</p>
                                         <p className="text-[10px] text-gray-400">{edu.school} | {edu.location}</p>
@@ -186,18 +243,27 @@ export default function Usr_Portfolio() {
                     <FrameCard frame={FRAMES[3]} active={canvasFrame?.id === "achievements"} onClick={() => goTo(FRAMES[3])}>
                         <div className="flex justify-between items-center mb-3"> 
                             <p className="text-sm font-extrabold text-[#003C61]"> Achievements</p>
-                            <button /* onClick={(e) => {e.stopPropagation(); navigate("/achievements/create")}} */ className="bg-[#007C77] hover:bg-[#005f5b] text-white text-[10px] font-bold px-3 py-1.5 rounded-lg transition-colors border-none cursor-pointer"> + Add New Entry</button>
+                            <button onClick={(e) => {e.stopPropagation(); navigate("/achievements/create")}} className="bg-[#007C77] hover:bg-[#005f5b] text-white text-[10px] font-bold px-3 py-1.5 rounded-lg transition-colors border-none cursor-pointer"> + Add New Entry</button>
                         </div>
                         <div>
-                            {user.achievements.map((b_entry, i) => (
-                                <div key={i} className="border border-gray-200 rounded-xl p-3 flex flex-col gap-1 hover:border-[#007C77] transition-colors cursor-pointer">
+                            {(userData?.achievements ?? []).map((b_entry, i) => (
+                                <div
+                                    key={i}
+                                    className="border border-gray-200 rounded-xl p-3 flex flex-col gap-1 hover:border-[#007C77] transition-colors cursor-pointer"
+                                >
                                     <div>
-                                        {/* 
-                                        <p className="text-[11px] font-bold text-[#003C61]">{b_entry.title}</p>
-                                        <p className="text-[10px] text-gray-400">{b_entry.company}</p>
-                                        <p className="text-[10px] text-gray-400">{b_entry.dates}</p>
-                                        <span className="text-[10px] text-[#007C77] font-semibold mt-1">View details →</span>
-                                        */}
+                                        <p className="text-[11px] font-bold text-[#003C61]">
+                                            {b_entry.title}
+                                        </p>
+                                        <p className="text-[10px] text-gray-400">
+                                            {b_entry.company}
+                                        </p>
+                                        <p className="text-[10px] text-gray-400">
+                                            {b_entry.dates}
+                                        </p>
+                                        <span className="text-[10px] text-[#007C77] font-semibold mt-1">
+                                            View details →
+                                        </span>
                                     </div>
                                 </div>
                             ))}

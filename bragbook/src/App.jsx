@@ -10,6 +10,16 @@ import SignupPage from './components/SignupPage'
 import LoginPage from './components/LoginPage'
 import Usr_Portfolio from './components/Usr_Portfolio'
 
+import EducationCreate from "./components/forms/create_edu";
+import EducationView from "./components/forms/view_edu";
+import EducationUpdate from "./components/forms/update_edu";
+import EducationDelete from "./components/forms/delete_edu";
+
+import CreateAchievement from "./components/forms/Achievement_create";
+import UpdateAchievement from "./components/forms/update_achievement";
+
+import EditProfile from './components/forms/edit_profile'
+
 const App = () => {
   return (
     <BrowserRouter>
@@ -25,6 +35,20 @@ const App = () => {
           
         {/* Portfolio page: user's profile and entries */}
         <Route path='/portfolio' element={<Usr_Portfolio />} />
+
+        {/* All education pages */}
+        <Route path="/education/create" element={<EducationCreate />} />
+        <Route path="/education/view/:entryId" element={<EducationView />} />
+        <Route path="/education/edit/:entryId" element={<EducationUpdate />} />
+        <Route path="/education/delete/:entryId" element={<EducationDelete />} />
+
+        {/* All achievement pages */}
+        <Route path="/achievements/create" element={<CreateAchievement />} />
+        <Route path="/achievements/edit/:entryId" element={<UpdateAchievement />} />
+
+        {/* edit profile page */}
+        <Route path="/profile/edit" element={<EditProfile />} />
+
       </Routes>
     </BrowserRouter>
   )
