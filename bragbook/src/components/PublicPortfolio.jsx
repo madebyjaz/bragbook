@@ -190,7 +190,7 @@ export default function PublicPortfolio() {
                     {/* Achievements — no add or delete buttons */}
                     <FrameCard frame={FRAMES[3]} active={canvasFrame?.id === "achievements"} onClick={() => goTo(FRAMES[3])}>
                         <p className="text-sm font-extrabold text-[#003C61] mb-3">Achievements</p>
-                        <div>
+                        <div style={{overflowY: "auto", maxHeight: "300px"}} onClick={(e) => e.stopPropagation()}>
                             {achievementEntries.length === 0 ? (
                                 <p className="text-xs text-gray-300 mt-4 text-center">No achievements yet.</p>
                             ) : (
