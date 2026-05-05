@@ -166,7 +166,7 @@ export default function Discover() {
                                             )}
 
                                             <button
-                                                onClick={(e) => { e.stopPropagation(); navigate(`/login`); }}
+                                                onClick={(e) => { e.stopPropagation(); navigate(`/u/${user.id}`); }}
                                                 className="w-full py-2 rounded-full text-white text-[10px] font-bold border-none cursor-pointer mt-1"
                                                 style={{ background: "linear-gradient(135deg, #007C77, #0d9488)" }}>
                                                 View Portfolio →
