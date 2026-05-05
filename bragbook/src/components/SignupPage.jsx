@@ -176,7 +176,7 @@ const SignupPage = ({ onSwitchToLogin }) => {
         <p className='text-sm text-center text-gray-500 mt-4'>
           Already have an account?{' '}
           <button
-            onClick={onSwitchToLogin}
+            onClick={() => navigate('/login')}
             className='text-purple-700 font-medium hover:underline'
           >
             Log in
