@@ -1,33 +1,94 @@
-# <em> BragBook.cv - The Verifiable Portfolio </em>
----
-## Team Checklist
+# <em>**BragBook.cv** — The Verifiable Portfolio</em>
 
-- Team Contract: <a href = "https://docs.google.com/document/d/1F8Unjnok1MAOcoC8QkUTFDLiaimh6sjfprvlnrIRbjQ/edit?usp=sharing" target = "_blank"><u>Team Contract</u></a>
-   
-- TimeSheet: <a href = "https://docs.google.com/spreadsheets/d/1w4ipw3OLucJkLUSc5HmOBDwUB32WeGyAK4sz2_q60ZU/edit?gid=0#gid=0" target = "_blank"> <u>TimeSheet</u> </a>
-  
-- Client Meeting Notes: <a href = "https://docs.google.com/document/d/1yDFoIvANm4xvwIUFhzZX95BNwfZXaDOaiLx8MIhVrPk/edit?usp=sharing" target = "_blank"> <u> Client Meeting Notes</u> </a>
+## What is BragBook?
+BragBook.cv is a web-based portfolio platform that helps professionals document their achievements, completed projects, and career milestones. Users organize their work into brag entries and build a professional profile to support interviews, performance reviews, and career development conversations.
 
----
+Proof attachments let users provide supporting evidence alongside their achievements, giving their portfolio more context and credibility.
 
-## What is BragBook? 
-The Brag Book platform functions as a web-based portfolio system which assists professionals in collecting and arranging their work achievements for presentation purposes through reliable and organized methods. Users have the ability to create "brag entries" which allow them to record their achievements and completed projects and important career milestones throughout their professional journey.
+> **Please Note:** This repository is a fork of the official BragBook.cv project from my institution’s private repository.
 
-The platform enables users to establish secure accounts which they can use to handle their personal brag book and build a professional portfolio that they can share with others. Each brag entry serves to showcase actual work accomplishments which users can use to demonstrate their professional history during interviews and performance evaluations and career development discussions.
+## MVP Features
 
-Brag Book provides users with an easy-to-use interface which maintains a professional appearance throughout its design. The project aims to create a complete MVP product which showcases the complete development process of the product through user authentication and database-backed CRUD functions and a public portfolio display.
+The current implementation includes:
 
----
+### Professional Profiles
 
-## Prerequisites
-1. npm install
-2. npm run dev
----
+- User profiles with a name displayed in the profile header.
+- An edit profile form for updating profile information.
+- Profile photo and avatar uploads.
+- An education section with forms to add, edit, and delete education records.
 
-## Past Resources
+| Discover Overview | Profile Overview |
+| --- | --- |
+| ![Discover Profile](docs/screenshots/discover.png) | ![Profile Overview](docs/screenshots/profile-overview.png) |
 
-Demo Day #1 PPT: <a href = "https://1drv.ms/p/c/6683f44a98a14934/IQD8asQsjFLdR5gzTObhAqgJAU6q0quLEAf6pylW_awUBTs?e=zkBx8U" target = "_blank"> <em><u>Demo Day 1 PPT</u></em> </a>
 
-Demo Day #2 PPT: <a href = "https://1drv.ms/p/c/6683f44a98a14934/IQAeJ77cMPbzR62OFTScaMGsATWfwpHANBHCjc6ct0bOmaA?e=zPfhjQ"  target = "_blank">  <em><u>Demo Day 2 PPT</u></em> </a>
+### Achievement Entries
 
-Demo Day #3 PPT: <a href = "https://livememphis-my.sharepoint.com/:p:/g/personal/kjhns122_memphis_edu/IQCbtSMzTEqdSpzMs2HeF_HcAX0STxzQkTWuD5NLTuUWQAg?rtime=6oldFO2Q3kg" target = "_blank">   <em><u>Demo Day 3 PPT</u></em> </a>
+- A create entry form for documenting achievements and projects.
+- Entry cards displayed on the profile page.
+- An update entry form for editing existing entries.
+- Proof attachments for supporting achievement entries.
+
+| Achievement Entry Overview | Achievemen Entry Overview 2 |
+| --- | --- |
+| ![Achievement Entry Overview](docs/screenshots/achievements-overview.png) | ![Achievemen Entry Overview 2](docs/screenshots/achievement-overview2.png) |
+
+
+
+### Portfolio Experience
+
+- Story chapter card previews.
+- A close button for the user portfolio frame zoom view.
+- A connections spider web component for visualizing connections.
+
+| Education Overview | Education Details |
+| --- | --- |
+| ![Education Overview](docs/screenshots/education-overview.png) | ![Education Details](docs/screenshots/education-details.png) |
+
+| About Overview | Saving a Form | Edit Profile Form |
+| --- | --- | --- |
+| ![Edit Profile Form](docs/screenshots/edit-profile-form.png) | ![About Overview](docs/screenshots/about-overview.png) | ![Saving a Form](docs/screenshots/state-save.jpg) | 
+
+
+> **MVP Goals:** The overall MVP aims to connect account authentication, database-backed entry management, and a shareable public portfolio into a complete user journey.
+
+## Planned Improvements
+
+- Sort entries by date.
+- Add a confirmation dialog before deleting an entry.
+
+## Design and Development
+
+Completed design work includes low- and high-fidelity wireframes, user flow diagrams, a homepage transition state map, and a revised Figma prototype for the homepage transition flow. These artifacts guided the profile, entry management, and portfolio interfaces.
+
+## Peer Reviews
+
+Classmate feedback helped guide improvements to the MVP’s
+design, usability, and functionality.
+
+- [Peer Review 1](docs/formal_reviews/Jazsmin-Gilliam_Feedback_Recieved.pdf)
+- [Peer Review 2](docs/formal_reviews/Jazsmin_Gilliam_feedback_recieved.pdf)
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js and npm.
+- A local copy of this repository.
+
+### Installation
+
+- From the project directory, install dependencies:
+
+```bash
+npm install
+```
+
+### Run Locally
+- Start the development server:
+
+```bash
+npm run dev
+```
+Open the local URL printed in your terminal.
