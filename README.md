@@ -78,8 +78,13 @@ design, usability, and functionality.
 - A local copy of this repository.
 
 ### Installation
+- Change the directory from the root directory, to the `bragbook` folder:
 
-- From the project directory, install dependencies:
+```bash
+cd bragbook
+```
+
+- From the `bragbook` directory, install dependencies:
 
 ```bash
 npm install
